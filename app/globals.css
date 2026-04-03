@@ -1,33 +1,200 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* @import "tailwindcss"; */
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+    --background: #0a0a0a;
+    --foreground: #ededed;
   }
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* إخفاء شريط التمرير للتصنيفات */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* تخصيص شريط التمرير للسلة */
+.cart-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.cart-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+.cart-scroll::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+
+/* تحسينات للشاشات الصغيرة جداً */
+@media (max-width: 380px) {
+  .xs\:inline {
+    display: inline;
+  }
+}
+
+/* تحسين اللمس على الأجهزة المحمولة */
+@media (hover: none) {
+  button {
+    cursor: default;
+  }
+  
+  .group:hover {
+    transform: none;
+  }
+}
+
+/* تحسين عرض النصوص الطويلة */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+/* تحسين حجم الخطوط على الشاشات المختلفة */
+@media (min-width: 640px) {
+  .text-xs {
+    font-size: 0.75rem;
+  }
+  .text-sm {
+    font-size: 0.875rem;
+  }
+  .text-base {
+    font-size: 1rem;
+  }
+}
+
+
+/* تحسين وضوح النصوص في السلة */
+.cart-container {
+  font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* تحسين تباين النصوص */
+.cart-container .text-gray-400 {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.cart-container .text-gray-500 {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.cart-container .text-gray-600 {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.cart-container .text-gray-700 {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* تحسين حقل الملاحظات */
+.cart-container input::placeholder,
+.cart-container textarea::placeholder {
+  color: #d1d5db;
+  font-weight: 300;
+  font-size: 0.75rem;
+}
+
+/* تأثيرات hover محسنة */
+.cart-container button:hover {
+  transform: translateY(-1px);
+}
+
+.cart-container button:active {
+  transform: translateY(0);
+}
+
+
+/* app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --restaurant-primary: #f97316;
+    --restaurant-primary-dark: #ea580c;
+    --restaurant-primary-light: #fed7aa;
+  }
+  
+  .dark {
+    --restaurant-primary: #fb923c;
+    --restaurant-primary-dark: #f97316;
+    --restaurant-primary-light: #fed7aa;
+  }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .bg-primary {
+    background-color: var(--restaurant-primary);
+  }
+  
+  .bg-primary-dark {
+    background-color: var(--restaurant-primary-dark);
+  }
+  
+  .bg-primary-light {
+    background-color: var(--restaurant-primary-light);
+  }
+  
+  .text-primary {
+    color: var(--restaurant-primary);
+  }
+  
+  .border-primary {
+    border-color: var(--restaurant-primary);
+  }
+  
+  .shadow-primary {
+    box-shadow: 0 4px 14px 0 var(--restaurant-primary);
+  }
+  
+  .from-primary {
+    --tw-gradient-from: var(--restaurant-primary);
+  }
+  
+  .to-primary-dark {
+    --tw-gradient-to: var(--restaurant-primary-dark);
   }
 }
