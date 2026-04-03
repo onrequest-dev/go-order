@@ -5,15 +5,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
     const jwt = request.cookies.get("jwt")?.value;
-    
     if (!jwt) {
         return NextResponse.json({ error: "Unauthorized - No token provided" }, { status: 401 });
     }
     
     const jwt_user = decodeJWT(jwt) as RestaurantEmployeeJwt | null;
-    if (!jwt_user || typeof jwt_user === "string" || !jwt_user.user_name) {
+    console.log("Decoded JWT user:", jwt_user);
+    if (!jwt_user || typeof jwt_user === "string" ) {
         return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
     }
+    
     
     if (jwt_user.role !== 'admin' && jwt_user.role !== 'manager') {
         return NextResponse.json({ error: "Forbidden - Insufficient permissions" }, { status: 403 });

@@ -1,9 +1,10 @@
 // components/LoginForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginEmployee } from '@/client/helpers/auth';
+import { createMenuItem } from '@/client/helpers/menu_item';
 
 export function LoginForm() {
     const router = useRouter();
@@ -30,7 +31,20 @@ export function LoginForm() {
 
         setLoading(false);
     };
-
+    useEffect(()=>{
+        const createm = async ()=>{
+            const res = await createMenuItem({
+                name: 'بيتزا مارغريتا',
+                description: 'بيتزا كلاسيكية مع صلصة الطماطم، جبنة الموزاريلا، وأوراق الريحان الطازجة.',
+                price: 50,
+                category: 'بيتزا',
+                image: 'https://example.com/images/margherita.jpg',
+                isActive: true,
+            });
+            console.log(res);
+        }
+        createm();
+    },[])
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md w-96">
