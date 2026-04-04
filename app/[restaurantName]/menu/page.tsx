@@ -4,105 +4,11 @@ import { notFound, redirect } from "next/navigation";
 import { Restaurant } from "@/types";
 import MenuClient from "./components/MenuClient";
 
-// ========== بيانات افتراضية للمطعم AL-Zwak ==========
+// needs attintion
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-const DEFAULT_RESTAURANT: Restaurant = {
-  id: "default-al-zwak-001",
-  name: "مطعم الزواك",
-  slug: "AL-Zwak",
-  logo: "/img/brand/Alzwak.png",
-  primaryColor: "#6E5A0C",
-  phone: "+963 123 456 789",
-  address: "دمشق، سوريا",
-  isActive: true,
-  isSubscriptionActive: true,
-  subscriptionType: "pro",
-  numberOfTables: 10,
-  categories: ["مقبلات", "أطباق رئيسية", "مشروبات", "حلويات"],
-  menu: [
-    {
-      id: "item-001",
-      name: "شاورما دجاج",
-      description: "شاورما دجاج طازجة مع الصوص الخاص والثومية",
-      price: 25000,
-      image: "/images/shawarma.jpg",
-      isActive: true,
-      category: "أطباق رئيسية",
-      preparationTime: 10
-    },
-    {
-      id: "item-002",
-      name: "فلافل",
-      description: "فلافل مقلية طازجة مع الطحينة والسلطة",
-      price: 8000,
-      image: "/images/falafel.jpg",
-      isActive: true,
-      category: "مقبلات",
-      preparationTime: 8
-    },
-    {
-      id: "item-003",
-      name: "حمص",
-      description: "حمص بالطحينة والليمون مع زيت الزيتون",
-      price: 6000,
-      image: "/images/hummus.jpg",
-      isActive: true,
-      category: "مقبلات",
-      preparationTime: 5
-    },
-    {
-      id: "item-004",
-      name: "متة بالجبنة",
-      description: "متة محشية جبنة موزاريلا مع صلصة الطماطم",
-      price: 18000,
-      image: "/images/pizza.jpg",
-      isActive: true,
-      category: "أطباق رئيسية",
-      preparationTime: 15
-    },
-    {
-      id: "item-006",
-      name: "كنافة",
-      description: "كنافة نابلسية بالجبنة مع القطر",
-      price: 12000,
-      image: "/images/kanafeh.jpg",
-      isActive: true,
-      category: "حلويات",
-      preparationTime: 12
-    },
-    {
-      id: "item-007",
-      name: "تبولة",
-      description: "تبولة بالبقدونس والبرغل والطماطم",
-      price: 7000,
-      image: "/images/tabbouleh.jpg",
-      isActive: true,
-      category: "مقبلات",
-      preparationTime: 7
-    },
-    {
-      id: "item-008",
-      name: "مشاوي مشكلة",
-      description: "شيش طاووق، لحم، كباب مع الخضار المشوية",
-      price: 45000,
-      image: "/images/mashawi.jpg",
-      isActive: true,
-      category: "أطباق رئيسية",
-      preparationTime: 20
-    }
-  ],
-  averagePreparationTime: 15,
-  serviceFee: 2000,
-  currency: "SYP"
-};
 
-// واجهة لبيانات المطعم من الـ API
-interface RestaurantResponse {
-  success: boolean;
-  data?: Restaurant;
-  error?: string;
-}
+
 
 // دالة لجلب بيانات المطعم من السيرفر (مع بيانات افتراضية كـ fallback)
 async function fetchRestaurant(slug: string): Promise<Restaurant | null> {
