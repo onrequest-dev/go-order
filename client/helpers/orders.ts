@@ -29,9 +29,31 @@ export interface CreateOrderResponse {
 // services/orderService.ts
 import { Order } from '@/types';
 
+// دالة بسيطة لإعادة المحاولة
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries: number = 7): Promise<Response> {
+  let lastError: Error;
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || i === maxRetries - 1) {
+        return response; // نجاح أو آخر محاولة
+      }
+      // انتظر ثانية واحدة قبل إعادة المحاولة
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (error) {
+      lastError = error as Error;
+      if (i === maxRetries - 1) throw lastError;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  throw lastError!;
+}
+
 export async function createOrder(order: Order): Promise<CreateOrderResponse> {
   try {
-    const response = await fetch('/api/v1/restaurant/order', {
+    // استخدم fetchWithRetry بدلاً من fetch مباشرة
+    const response = await fetchWithRetry('/api/v1/restaurant/order', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -62,17 +84,3 @@ export async function createOrder(order: Order): Promise<CreateOrderResponse> {
 }
 
 // مثال على استخدام الدالة المساعدة
-export async function createOrderHelper(orderData: Order) {
-  const result = await createOrder(orderData);
-  
-  if (result.success) {
-    console.log('تم إنشاء الطلب بنجاح:', result.data);
-    // يمكنك هنا عرض رسالة نجاح للمستخدم
-    // أو تحديث حالة الواجهة
-    return result.data;
-  } else {
-    console.error('فشل إنشاء الطلب:', result.error);
-    // يمكنك هنا عرض رسالة خطأ للمستخدم
-    throw new Error(result.error);
-  }
-}

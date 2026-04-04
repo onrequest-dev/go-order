@@ -1,16 +1,18 @@
 // go-order\app\[restaurantName]\menu\page.tsx
 
 import { notFound, redirect } from "next/navigation";
-import { Restaurant, getCurrencySymbol } from "@/types";
+import { Restaurant } from "@/types";
 import MenuClient from "./components/MenuClient";
 
 // ========== بيانات افتراضية للمطعم AL-Zwak ==========
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 const DEFAULT_RESTAURANT: Restaurant = {
   id: "default-al-zwak-001",
   name: "مطعم الزواك",
   slug: "AL-Zwak",
   logo: "/img/brand/Alzwak.png",
-  primaryColor: "#FF8C42",
+  primaryColor: "#6E5A0C",
   phone: "+963 123 456 789",
   address: "دمشق، سوريا",
   isActive: true,
@@ -104,35 +106,15 @@ interface RestaurantResponse {
 
 // دالة لجلب بيانات المطعم من السيرفر (مع بيانات افتراضية كـ fallback)
 async function fetchRestaurant(slug: string): Promise<Restaurant | null> {
-  // إذا كان slug هو AL-Zwak، نعيد البيانات الافتراضية مباشرة
-  if (slug === "AL-Zwak") {
-    console.log("Using default restaurant data for AL-Zwak");
-    return DEFAULT_RESTAURANT;
-  }
-  
-  try {
-    // استخدام الـ API endpoint لجلب بيانات المطعم للمطاعم الأخرى
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/restaurants/slug/${slug}`, {
-      cache: "no-store",
-      next: { revalidate: 60 }
-    });
-    
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`Failed to fetch restaurant: ${response.statusText}`);
-    }
-    
-    const result: RestaurantResponse = await response.json();
-    
-    if (!result.success || !result.data) return null;
-    
-    return result.data;
-  } catch (error) {
-    console.error("Error fetching restaurant:", error);
-    return null;
-  }
+    const { data, error } = await supabase_server.rpc('get_restaurant_by_slug', {
+      p_slug: 'kh'
+  });
+  console.log("Supabase response:", { data: data, error });
+  return data as Restaurant;
+  // return DEFAULT_RESTAURANT;
 }
+  
+
 
 // دالة التحقق من صلاحية المطعم
 function isRestaurantValid(restaurant: Restaurant): { valid: boolean; reason?: string } {
@@ -174,6 +156,7 @@ export default async function RestaurantMenuPage({ params, searchParams }: PageP
   
   // جلب بيانات المطعم من السيرفر
   const restaurant = await fetchRestaurant(restaurantName);
+  console.log(restaurant)
   
   // حالة 1: المطعم غير موجود
   if (!restaurant) {
@@ -286,3 +269,4 @@ function RestaurantError({ type, message, primaryColor = "#FF8C42" }: { type: 'i
 // استيراد الـ motion لاستخدامه في مكون الخطأ
 import { motion } from "framer-motion";
 import { Ban, AlertTriangle, Clock } from "lucide-react";
+import { supabase_server } from "@/server/supabase-server";
