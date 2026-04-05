@@ -65,7 +65,12 @@ export async function updateMenuItem(
                 'Content-Type': 'application/json',
             },
             credentials: 'include',
-            body: JSON.stringify({ id, ...updates }),
+            body: JSON.stringify({ id, ...{
+                ...updates,
+                is_active: updates.isActive,
+                image_link : updates.image,
+                
+            } }),
         });
 
         const data = await response.json();

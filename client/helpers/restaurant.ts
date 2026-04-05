@@ -64,6 +64,7 @@ export async function getRestaurant(): Promise<ApiResponse<Restaurant>> {
       averagePreparationTime : result.data.average_preparation_time ?? 0,
       // لازم نضيف حقل في قاعدة البيانات يدل اذا الاشتراك شغال ولا لا 
       isSubscriptionActive:true,
+      subscriptionType: result.data.subscriptiontype || 'normal',
       menu: menuresult.data.menu || [],
     }
     return { success: true, data: resturantData };

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Restaurant } from '@/types';
+import { MenuItem, Restaurant } from '@/types';
 import { MainInfo } from './tabs/MainInfo';
 import { TableOrders } from './tabs/TableOrders';
 import { PromoPages } from './tabs/PromoPages';
@@ -12,6 +12,8 @@ import { Profits } from './tabs/Profits';
 import { Employees } from './tabs/Employees';
 import { UpgradeDialog } from './UpgradeDialog';
 import { updateRestaurant } from '@/client/helpers/restaurant';
+import { createMenuItem, updateMenuItem } from '@/client/helpers/menu_item';
+import { supabase_client } from '@/lib/supabase-client';
 
 interface DashboardContentProps {
   restaurant: Restaurant;
@@ -80,7 +82,13 @@ export function DashboardContent({ restaurant, activeTab }: DashboardContentProp
         
         {/* المحتوى */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {activeTab === 'main' && <MainInfo restaurant={restaurant} onUpdateRestaurant={handleUpdateRestaurant} />}
+          {activeTab === 'main' && <MainInfo 
+          restaurant={restaurant}
+           onUpdateRestaurant={handleUpdateRestaurant}
+            onUpdateMenuItem={handleUpdateMenuItem} 
+            onAddMenuItem={handleAddMenuItem}
+            onUploadImage={handleUploadImage}
+            />}
           {activeTab === 'orders' && <TableOrders restaurantId={restaurant.id} />}
           {activeTab === 'promo' && <PromoPages restaurantId={restaurant.id} />}
           {activeTab === 'delivery' && <DeliveryOrders restaurantId={restaurant.id} />}
@@ -132,3 +140,67 @@ function getTabDescription(tab: string, restaurantName: string): string {
     // عرض رسالة خطأ للمستخدم إذا لزم الأمر
   }
  }
+const handleUpdateMenuItem = async (id: string, data: Partial<Omit<MenuItem, 'id'>>) => {
+  const result = await updateMenuItem(id, data);
+  console.log("Menu item update result:", result);
+  if(!result.success) {
+    throw new Error(result.error || "Failed to update menu item");
+  }
+}
+
+const handleAddMenuItem = async (data: Omit<MenuItem, 'id'>) => {
+  const result = await createMenuItem(data);
+  if (!result.success||!result.data) {
+    throw new Error(result.error || "Failed to add menu item");
+  }
+  return result.data;
+}
+
+
+
+const handleUploadImage = async (file: File, type: 'logo' | 'menu', restaurantId?: string, menuId?: string) => {
+  console.log("Uploading image:", file, "for type:", type);
+  
+  if (!file) {
+    console.error("No file provided");
+    return null;
+  }
+
+  // 1. إنشاء مسار فريد للصورة
+  const fileExt = file.name.split('.').pop();
+  
+  let fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+  if(type === 'menu' && menuId) {
+    fileName = `menu_${menuId}.${fileExt}`;
+  }
+  if(type === 'logo'&&restaurantId){
+    fileName = `logo_${restaurantId}.${fileExt}`;
+  }
+    const filePath = `${type}s/${fileName}`; // مثلاً: logos/123456789_abc123.png;
+  try {
+    // 2. رفع الصورة إلى Supabase Storage
+    const { data, error } = await supabase_client.storage
+      .from('images') // اسم الـ bucket (ستنشئه لاحقاً)
+      .upload(filePath, file, {
+        cacheControl: '0',
+        upsert: true, // لتحديث الصورة إذا كانت موجودة بالفعل
+      });
+
+    if (error) {
+      console.error("Upload error:", error);
+      throw error;
+    }
+
+    // 3. الحصول على الرابط العام للصورة
+    const { data: { publicUrl } } = supabase_client.storage
+      .from('images')
+      .getPublicUrl(filePath);
+    
+    // 4. إرجاع الرابط لحفظه في قاعدة البيانات
+    if(!publicUrl) throw new Error("فشل تحميل الصورة" ); 
+    return publicUrl;
+
+  } catch (error) {
+    throw new Error("فشل في تحميل الصورة");
+  }
+};
