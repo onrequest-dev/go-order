@@ -27,7 +27,7 @@ interface MainInfoProps {
   onAddMenuItem?: (item: Omit<MenuItem, 'id'>) => Promise<MenuItem>;
   onUpdateMenuItem?: (id: string, data: Partial<MenuItem>) => Promise<void>;
   onDeleteMenuItem?: (id: string) => Promise<void>;
-  onUploadImage?: (file: File) => Promise<string>;
+  onUploadImage?: (file: File, type: 'logo' | 'menu',restaurantId?: string, menuId?: string) => Promise<string>;
 }
 
 type TabType = 'info' | 'menu';
@@ -94,7 +94,9 @@ export function MainInfo({
     
     setUploading(true);
     try {
-      const imageUrl = await onUploadImage(file);
+      let menuId = ""
+      if(type=='menu') { menuId = editingItem?.id||""}
+      const imageUrl = await onUploadImage(file,type, restaurant.id,menuId);
       if (type === 'logo') {
         setFormData({ ...formData, logo: imageUrl });
       } else {
@@ -210,6 +212,7 @@ export function MainInfo({
       setSuccessMessage('تم تحديث الوجبة بنجاح!');
       setShowSuccess(true);
     } catch (error) {
+      setShowAddModal(false);
       console.error('خطأ:', error);
       setSuccessMessage('حدث خطأ في تحديث الوجبة');
       setShowSuccess(true);

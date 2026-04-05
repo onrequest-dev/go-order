@@ -1,138 +1,26 @@
 // go-order\app\[restaurantName]\menu\page.tsx
 
 import { notFound, redirect } from "next/navigation";
-import { Restaurant, getCurrencySymbol } from "@/types";
+import { Restaurant } from "@/types";
 import MenuClient from "./components/MenuClient";
 
-// ========== بيانات افتراضية للمطعم AL-Zwak ==========
-const DEFAULT_RESTAURANT: Restaurant = {
-  id: "default-al-zwak-001",
-  name: "مطعم الزواك",
-  slug: "AL-Zwak",
-  logo: "/img/brand/Alzwak.png",
-  primaryColor: "#FF8C42",
-  phone: "+963 123 456 789",
-  address: "دمشق، سوريا",
-  isActive: true,
-  isSubscriptionActive: true,
-  subscriptionType: "pro",
-  numberOfTables: 10,
-  categories: ["مقبلات", "أطباق رئيسية", "مشروبات", "حلويات"],
-  menu: [
-    {
-      id: "item-001",
-      name: "شاورما دجاج",
-      description: "شاورما دجاج طازجة مع الصوص الخاص والثومية",
-      price: 25000,
-      image: "/images/shawarma.jpg",
-      isActive: true,
-      category: "أطباق رئيسية",
-      preparationTime: 10
-    },
-    {
-      id: "item-002",
-      name: "فلافل",
-      description: "فلافل مقلية طازجة مع الطحينة والسلطة",
-      price: 8000,
-      image: "/images/falafel.jpg",
-      isActive: true,
-      category: "مقبلات",
-      preparationTime: 8
-    },
-    {
-      id: "item-003",
-      name: "حمص",
-      description: "حمص بالطحينة والليمون مع زيت الزيتون",
-      price: 6000,
-      image: "/images/hummus.jpg",
-      isActive: true,
-      category: "مقبلات",
-      preparationTime: 5
-    },
-    {
-      id: "item-004",
-      name: "متة بالجبنة",
-      description: "متة محشية جبنة موزاريلا مع صلصة الطماطم",
-      price: 18000,
-      image: "/images/pizza.jpg",
-      isActive: true,
-      category: "أطباق رئيسية",
-      preparationTime: 15
-    },
-    {
-      id: "item-006",
-      name: "كنافة",
-      description: "كنافة نابلسية بالجبنة مع القطر",
-      price: 12000,
-      image: "/images/kanafeh.jpg",
-      isActive: true,
-      category: "حلويات",
-      preparationTime: 12
-    },
-    {
-      id: "item-007",
-      name: "تبولة",
-      description: "تبولة بالبقدونس والبرغل والطماطم",
-      price: 7000,
-      image: "/images/tabbouleh.jpg",
-      isActive: true,
-      category: "مقبلات",
-      preparationTime: 7
-    },
-    {
-      id: "item-008",
-      name: "مشاوي مشكلة",
-      description: "شيش طاووق، لحم، كباب مع الخضار المشوية",
-      price: 45000,
-      image: "/images/mashawi.jpg",
-      isActive: true,
-      category: "أطباق رئيسية",
-      preparationTime: 20
-    }
-  ],
-  averagePreparationTime: 15,
-  serviceFee: 2000,
-  currency: "SYP"
-};
+// needs attintion
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-// واجهة لبيانات المطعم من الـ API
-interface RestaurantResponse {
-  success: boolean;
-  data?: Restaurant;
-  error?: string;
-}
+
 
 // دالة لجلب بيانات المطعم من السيرفر (مع بيانات افتراضية كـ fallback)
 async function fetchRestaurant(slug: string): Promise<Restaurant | null> {
-  // إذا كان slug هو AL-Zwak، نعيد البيانات الافتراضية مباشرة
-  if (slug === "AL-Zwak") {
-    console.log("Using default restaurant data for AL-Zwak");
-    return DEFAULT_RESTAURANT;
-  }
-  
-  try {
-    // استخدام الـ API endpoint لجلب بيانات المطعم للمطاعم الأخرى
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/restaurants/slug/${slug}`, {
-      cache: "no-store",
-      next: { revalidate: 60 }
-    });
-    
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`Failed to fetch restaurant: ${response.statusText}`);
-    }
-    
-    const result: RestaurantResponse = await response.json();
-    
-    if (!result.success || !result.data) return null;
-    
-    return result.data;
-  } catch (error) {
-    console.error("Error fetching restaurant:", error);
-    return null;
-  }
+    const { data, error } = await supabase_server.rpc('get_restaurant_by_slug', {
+      p_slug:  slug.trim().toLowerCase()
+  });
+  console.log("Supabase response:", { data: data, error });
+  return data as Restaurant;
+  // return DEFAULT_RESTAURANT;
 }
+  
+
 
 // دالة التحقق من صلاحية المطعم
 function isRestaurantValid(restaurant: Restaurant): { valid: boolean; reason?: string } {
@@ -174,6 +62,7 @@ export default async function RestaurantMenuPage({ params, searchParams }: PageP
   
   // جلب بيانات المطعم من السيرفر
   const restaurant = await fetchRestaurant(restaurantName);
+  console.log(restaurant)
   
   // حالة 1: المطعم غير موجود
   if (!restaurant) {
@@ -286,3 +175,4 @@ function RestaurantError({ type, message, primaryColor = "#FF8C42" }: { type: 'i
 // استيراد الـ motion لاستخدامه في مكون الخطأ
 import { motion } from "framer-motion";
 import { Ban, AlertTriangle, Clock } from "lucide-react";
+import { supabase_server } from "@/server/supabase-server";

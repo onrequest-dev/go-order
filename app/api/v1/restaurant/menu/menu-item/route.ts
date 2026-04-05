@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
     }
     
     const jwt_user = decodeJWT(jwt) as RestaurantEmployeeJwt | null;
-    console.log("Decoded JWT user:", jwt_user);
     if (!jwt_user || typeof jwt_user === "string" ) {
         return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
     }
@@ -116,7 +115,7 @@ export async function PUT(request: NextRequest) {
     }
     
     const jwt_user = decodeJWT(jwt) as RestaurantEmployeeJwt | null;
-    if (!jwt_user || typeof jwt_user === "string" || !jwt_user.user_name) {
+    if (!jwt_user || typeof jwt_user === "string" ) {
         return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
     }
     

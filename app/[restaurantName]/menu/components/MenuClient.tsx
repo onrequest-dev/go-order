@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { MenuItem, Restaurant, Order, OrderItem, getCurrencySymbol } from "@/types";
+import { createOrder } from "@/client/helpers/orders";
 
 // ========== أنواع البيانات ==========
 interface CartItem extends MenuItem {
@@ -703,34 +704,28 @@ export default function MenuClient({ restaurant, tableNumber }: MenuClientProps)
     const orderData: Omit<Order, 'id' | 'createdAt'> = {
       tableNumber,
       items: orderItems,
-      totalAmount,
+      totalPrice: totalAmount,
       status: 'pending',
       orderType: 'dine_in',
       customerName: undefined,
       customerPhone: undefined,
-      deliveryAddress: undefined
+      deliveryAddress: undefined,
+      restaurantId: restaurant.id,
     };
     
     try {
-      // إرسال الطلب إلى API
-      const response = await fetch(`/api/orders/${restaurant.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+        console.log("orderData: ",orderData);
+      const result = await createOrder({
           ...orderData,
-          globalNotes
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في إرسال الطلب');
+          id:"ignore",
+          createdAt: new Date(),
+          note: globalNotes
+        });
+      if (result.error) {
+        throw new Error('فشل في إرسال الطلب');
       }
       
-      const result = await response.json();
-      
+      console.log("Order created successfully:", result.data);
       // عرض تفاصيل الطلب في نافذة التأكيد
       setOrderDetails({
         restaurantName: restaurant.name,
@@ -750,7 +745,7 @@ export default function MenuClient({ restaurant, tableNumber }: MenuClientProps)
       
       // طباعة الطلب في الكونسول للتصحيح
       console.log("========== طلب جديد ==========");
-      console.log(`معرف الطلب: ${result.orderId}`);
+      console.log(`معرف الطلب: ${result.data?.id}`);
       console.log(`مطعم: ${restaurant.name}`);
       console.log(`رقم الطاولة: ${tableNumber}`);
       console.log(`الإجمالي: ${totalAmount} ${currencySymbol}`);

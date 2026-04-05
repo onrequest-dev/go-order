@@ -21,16 +21,18 @@ export interface MenuItem {
 
 // ========== بيانات الطلب ==========
 export interface Order {
+  restaurantId: string
   id: string;//معرف الطلب
   tableNumber: number;//الطاولة التي تم طلب الوجبة عليها
   items: OrderItem[];//عناصر الطلب
-  totalAmount: number;//المبلغ الإجمالي للطلب
+  totalPrice: number;//المبلغ الإجمالي للطلب
   status: 'pending' | 'preparing' | 'ready' | 'served' | 'completed';//حالة الطلب
   orderType: 'dine_in' | 'delivery';//(الطلب داخل المطعم أو طلب توصيل) نحن لازم نعالجه بشكل مختلف في الواجهة
   createdAt: Date;//تاريخ إنشاء الطلب  (مشان جماعة الإحصائيات)
   customerName?: string;//اسم العميل(للطلبات الخارجية)
   customerPhone?: string;//رقم هاتف العميل(للطلبات الخارجية)
   deliveryAddress?: string;//عنوان التوصيل(للطلبات الخارجية)
+  note?: string
 }
 
 export interface OrderItem {
