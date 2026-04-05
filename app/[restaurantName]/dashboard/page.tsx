@@ -8,7 +8,7 @@ import { Sidebar } from './components/Sidebar';
 import { DashboardContent } from './components/DashboardContent';
 import { Restaurant } from '@/types';
 import { getRestaurantData } from '@/lib/restaurant-data';
-import { Menu } from 'lucide-react';
+import { Menu , UtensilsCrossed } from 'lucide-react';
 import { getRestaurant } from '@/client/helpers/restaurant';
 
 export default function DashboardPage() {
@@ -134,193 +134,51 @@ export default function DashboardPage() {
   );
 }
 
-// شاشة تحميل متطورة
-
 
 export function LoadingScreen() {
   return (
     <div 
-      className="min-h-screen flex items-center justify-center relative overflow-hidden"
+      className="min-h-screen flex items-center justify-center relative"
       style={{ backgroundColor: '#1A2A4F' }}
     >
-      {/* خلفية متحركة - دوائر متداخلة */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div 
-          className="absolute -top-40 -right-40 w-80 h-80 rounded-full"
-          style={{ backgroundColor: '#FF8C42', opacity: 0.05 }}
-          animate={{ 
-            scale: [1, 1.5, 1],
-            x: [0, -50, 0],
-            y: [0, 50, 0]
-          }}
-          transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
-        />
-        <motion.div 
-          className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full"
-          style={{ backgroundColor: '#FF8C42', opacity: 0.03 }}
-          animate={{ 
-            scale: [1.5, 1, 1.5],
-            x: [0, 50, 0],
-            y: [0, -50, 0]
-          }}
-          transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
-        />
-        <motion.div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
-          style={{ 
-            background: 'radial-gradient(circle, rgba(255,140,66,0.08) 0%, transparent 70%)'
-          }}
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3]
-          }}
-          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-        />
-      </div>
-
-      {/* المحتوى الرئيسي */}
-      <div className="relative z-10 text-center">
-        {/* اللوغو المتحرك */}
-        <motion.div 
-          className="relative mb-8"
-          animate={{ 
-            scale: [1, 1.05, 1],
-          }}
-          transition={{ 
-            repeat: Infinity, 
-            duration: 2,
-            ease: "easeInOut"
-          }}
+      {/* خلفية بسيطة */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1A2A4F] to-[#0F1A33]" />
+      
+      {/* المحتوى */}
+      <motion.div 
+        className="relative z-10 text-center"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        {/* أيقونة دوارة */}
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+          className="mb-6"
         >
-          {/* الخلفية المتوهجة */}
-          <motion.div 
-            className="absolute inset-0 rounded-2xl blur-2xl"
-            style={{ backgroundColor: '#FF8C42', opacity: 0.3 }}
-            animate={{ 
-              scale: [0.9, 1.1, 0.9],
-              opacity: [0.3, 0.5, 0.3]
-            }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-          />
-
-          {/* اللوغو الأساسي */}
-          <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-            <div className="flex items-center gap-3">
-              {/* حرف G */}
-              <div className="relative">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#FF8C42] to-[#FF6B2C] flex items-center justify-center shadow-lg">
-                  <span className="text-3xl font-bold text-white">G</span>
-                </div>
-                {/* الانعطاف */}
-                <motion.div 
-                  className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-0.5 bg-gradient-to-r from-[#FF8C42] to-transparent"
-                  animate={{ width: ['0px', '24px', '0px'] }}
-                  transition={{ repeat: Infinity, duration: 1.5, delay: 0.5 }}
-                />
-              </div>
-
-              {/* حرف O */}
-              <div className="relative">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#FF8C42] to-[#FF6B2C] flex items-center justify-center shadow-lg">
-                  <span className="text-3xl font-bold text-white">O</span>
-                </div>
-                {/* السهم المخترق */}
-                <motion.div 
-                  className="absolute -left-3 top-1/2 -translate-y-1/2"
-                  animate={{ x: [-10, 0, -10] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                >
-                  <div className="w-3 h-3 border-t-2 border-r-2 border-[#FF8C42] rotate-45" />
-                </motion.div>
-              </div>
-            </div>
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF8C42] to-[#FF6B2C] flex items-center justify-center shadow-xl">
+            <UtensilsCrossed className="w-10 h-10 text-white" />
           </div>
         </motion.div>
 
-        {/* اسم الشركة */}
+        {/* النص المتلاشي */}
         <motion.h1 
-          className="text-4xl font-bold mb-2 tracking-tight"
-          style={{ 
-            background: 'linear-gradient(135deg, #FF8C42 0%, #FF6B2C 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          className="text-2xl font-bold text-white"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ repeat: Infinity, duration: 1.5 }}
         >
           GoOrder
         </motion.h1>
-
-        {/* النص التحتي */}
+        
         <motion.p 
-          className="text-gray-400 text-sm mb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          className="text-gray-400 text-xs mt-3"
+          animate={{ opacity: [0.3, 0.7, 0.3] }}
+          transition={{ repeat: Infinity, duration: 1.5, delay: 0.5 }}
         >
-          نظام إدارة المطاعم الذكي
+          نظام إدارة المطاعم
         </motion.p>
-
-        {/* شريط التحميل */}
-        <div className="w-48 mx-auto mb-4">
-          <div className="h-0.5 bg-white/10 rounded-full overflow-hidden">
-            <motion.div 
-              className="h-full rounded-full"
-              style={{ backgroundColor: '#FF8C42' }}
-              initial={{ width: '0%' }}
-              animate={{ width: '100%' }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
-          </div>
-        </div>
-
-        {/* نص التحميل */}
-        <motion.div 
-          className="flex items-center justify-center gap-1"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-        >
-          <span className="text-gray-400 text-sm">جاري التحميل</span>
-          <motion.span
-            className="text-[#FF8C42] text-sm"
-            animate={{ opacity: [0, 1, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, delay: 0 }}
-          >.</motion.span>
-          <motion.span
-            className="text-[#FF8C42] text-sm"
-            animate={{ opacity: [0, 1, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, delay: 0.3 }}
-          >.</motion.span>
-          <motion.span
-            className="text-[#FF8C42] text-sm"
-            animate={{ opacity: [0, 1, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, delay: 0.6 }}
-          >.</motion.span>
-        </motion.div>
-
-        {/* دوائر تحميل صغيرة */}
-        <div className="flex justify-center gap-2 mt-6">
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: '#FF8C42' }}
-              animate={{ 
-                scale: [1, 1.5, 1],
-                opacity: [0.3, 1, 0.3]
-              }}
-              transition={{ 
-                repeat: Infinity, 
-                duration: 1,
-                delay: i * 0.2
-              }}
-            />
-          ))}
-        </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -17,7 +17,9 @@ import {
   X,
   FolderPlus,
   Upload,
-  Loader2
+  Loader2,
+  ShoppingBag,
+  Minus
 } from 'lucide-react';
 import { Restaurant, MenuItem, getCurrencySymbol, Currency } from '@/types';
 
@@ -54,16 +56,21 @@ export function MainInfo({
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [uploading, setUploading] = useState(false);
-  
+  // State لنافذة تأكيد تغيير العملة
+const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+const [newCurrency, setNewCurrency] = useState<Currency | null>(null);
+
   // State للفئات
   const [categories, setCategories] = useState<string[]>(restaurant.categories || []);
   const [newCategory, setNewCategory] = useState('');
   const [showCategoryInput, setShowCategoryInput] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
   // State للوجبات
   const [menuItems, setMenuItems] = useState<MenuItem[]>(restaurant.menu || []);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [loadingItemId, setLoadingItemId] = useState<string | null>(null);//حالة الوجبة
   const [newItem, setNewItem] = useState<Partial<MenuItem>>({
     name: '',
     description: '',
@@ -76,6 +83,29 @@ export function MainInfo({
 
   const primaryColor = restaurant.primaryColor || '#f97316';
 
+
+  // منع التمرير في الخلفية عند فتح المودال
+useEffect(() => {
+  if (showAddModal) {
+    // حفظ قيمة overflow الحالية
+    const originalOverflow = document.body.style.overflow;
+    // منع التمرير
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${window.scrollY}px`;
+    
+    // استرجاع التمرير عند الإغلاق
+    return () => {
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    };
+  }
+}, [showAddModal]);
   // حفظ التبويب النشط
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
@@ -116,6 +146,45 @@ export function MainInfo({
       setUploading(false);
     }
   };
+
+  // معالجة تغيير العملة مع التحذير
+const handleCurrencyChange = (currency: Currency) => {
+  if (currency === formData.currency) return;
+  
+  // فتح نافذة التأكيد
+  setNewCurrency(currency);
+  setShowCurrencyModal(true);
+};
+
+// تأكيد تغيير العملة وتحديث الأسعار
+const confirmCurrencyChange = async () => {
+  if (!newCurrency) return;
+  
+  setSaving(true);
+  try {
+    // تحديث عملة المطعم
+    await onUpdateRestaurant?.({ currency: newCurrency });
+    
+    // تحديث أسعار جميع الوجبات (اختياري: يمكنك تحويل الأسعار أو تركها كما هي)
+    // هنا نقوم بتحديث الـ state المحلي
+    setFormData({ ...formData, currency: newCurrency });
+    
+    // إذا أردت تحويل الأسعار تلقائياً (مثال: من دولار إلى ليرة)
+    // يمكنك إضافة منطق التحويل هنا
+    
+    setSuccessMessage('تم تغيير العملة بنجاح');
+    setShowSuccess(true);
+  } catch (error) {
+    console.error('خطأ:', error);
+    setSuccessMessage('حدث خطأ في تغيير العملة');
+    setShowSuccess(true);
+  } finally {
+    setSaving(false);
+    setShowCurrencyModal(false);
+    setNewCurrency(null);
+  }
+};
+
 
   // إضافة فئة جديدة
   const handleAddCategory = () => {
@@ -173,83 +242,109 @@ export function MainInfo({
   };
 
   // إضافة وجبة جديدة
-  const handleAddMenuItem = async () => {
-    if (!onAddMenuItem || !newItem.name || !newItem.price) return;
+const handleAddMenuItem = async () => {
+  // التحقق من صحة البيانات
+  if (!onAddMenuItem || !newItem.name || !newItem.price) return;
+  
+  // تفعيل حالة التحميل وتعطيل الزر
+  setSubmitting(true);
+  
+  try {
+    const added = await onAddMenuItem(newItem as Omit<MenuItem, 'id'>);
+    setMenuItems([...menuItems, added]);
+    setShowAddModal(false);
     
-    try {
-      const added = await onAddMenuItem(newItem as Omit<MenuItem, 'id'>);
-      setMenuItems([...menuItems, added]);
-      setShowAddModal(false);
-      setNewItem({
-        name: '',
-        description: '',
-        price: 0,
-        image: '',
-        category: '',
-        preparationTime: 30,
-        isActive: true
-      });
-      setSuccessMessage('تم إضافة الوجبة بنجاح!');
-      setShowSuccess(true);
-    } catch (error) {
-      console.error('خطأ:', error);
-      setSuccessMessage('حدث خطأ في إضافة الوجبة');
-      setShowSuccess(true);
-    }
-  };
+    // إعادة تعيين النموذج
+    setNewItem({
+      name: '',
+      description: '',
+      price: 0,
+      image: '',
+      category: '',
+      preparationTime: 30,
+      isActive: true
+    });
+    
+    setSuccessMessage('تم إضافة الوجبة بنجاح!');
+    setShowSuccess(true);
+  } catch (error) {
+    console.error('خطأ:', error);
+    setSuccessMessage('حدث خطأ في إضافة الوجبة');
+    setShowSuccess(true);
+  } finally {
+    // إلغاء حالة التحميل بغض النظر عن نجاح أو فشل العملية
+    setSubmitting(false);
+  }
+};
 
   // تحديث الوجبة
-  const handleUpdateMenuItem = async () => {
-    if (!onUpdateMenuItem || !editingItem) return;
+const handleUpdateMenuItem = async () => {
+  if (!onUpdateMenuItem || !editingItem) return;
+  
+  // تفعيل حالة التحميل
+  setSubmitting(true);
+  
+  try {
+    await onUpdateMenuItem(editingItem.id, editingItem);
+    setMenuItems(menuItems.map(item => 
+      item.id === editingItem.id ? editingItem : item
+    ));
+    setEditingItem(null);
+    setShowAddModal(false);
     
-    try {
-      await onUpdateMenuItem(editingItem.id, editingItem);
-      setMenuItems(menuItems.map(item => 
-        item.id === editingItem.id ? editingItem : item
-      ));
-      setEditingItem(null);
-      setShowAddModal(false);
-      setSuccessMessage('تم تحديث الوجبة بنجاح!');
-      setShowSuccess(true);
-    } catch (error) {
-      setShowAddModal(false);
-      console.error('خطأ:', error);
-      setSuccessMessage('حدث خطأ في تحديث الوجبة');
-      setShowSuccess(true);
-    }
-  };
+    setSuccessMessage('تم تحديث الوجبة بنجاح!');
+    setShowSuccess(true);
+  } catch (error) {
+    console.error('خطأ:', error);
+    setSuccessMessage('حدث خطأ في تحديث الوجبة');
+    setShowSuccess(true);
+  } finally {
+    // إلغاء حالة التحميل
+    setSubmitting(false);
+  }
+};
 
   // نفاذ الكمية
-  const handleOutOfStock = async (id: string) => {
-    if (!onUpdateMenuItem) return;
-    
-    try {
-      await onUpdateMenuItem(id, { isActive: false });
-      setMenuItems(menuItems.map(item => 
-        item.id === id ? { ...item, isActive: false } : item
-      ));
-      setSuccessMessage('تم تحديث حالة الوجبة');
-      setShowSuccess(true);
-    } catch (error) {
-      console.error('خطأ:', error);
-    }
-  };
+const handleOutOfStock = async (id: string) => {
+  if (!onUpdateMenuItem) return;
+  
+  setLoadingItemId(id); // ✅ بدء التحميل
+  try {
+    await onUpdateMenuItem(id, { isActive: false });
+    setMenuItems(menuItems.map(item => 
+      item.id === id ? { ...item, isActive: false } : item
+    ));
+    setSuccessMessage('تم تحديث حالة الوجبة');
+    setShowSuccess(true);
+  } catch (error) {
+    console.error('خطأ:', error);
+    setSuccessMessage('حدث خطأ');
+    setShowSuccess(true);
+  } finally {
+    setLoadingItemId(null); // ✅ إنهاء التحميل
+  }
+};
 
   // تفعيل الوجبة
-  const handleActivateItem = async (id: string) => {
-    if (!onUpdateMenuItem) return;
-    
-    try {
-      await onUpdateMenuItem(id, { isActive: true });
-      setMenuItems(menuItems.map(item => 
-        item.id === id ? { ...item, isActive: true } : item
-      ));
-      setSuccessMessage('تم تفعيل الوجبة');
-      setShowSuccess(true);
-    } catch (error) {
-      console.error('خطأ:', error);
-    }
-  };
+const handleActivateItem = async (id: string) => {
+  if (!onUpdateMenuItem) return;
+  
+  setLoadingItemId(id); // ✅ بدء التحميل
+  try {
+    await onUpdateMenuItem(id, { isActive: true });
+    setMenuItems(menuItems.map(item => 
+      item.id === id ? { ...item, isActive: true } : item
+    ));
+    setSuccessMessage('تم تفعيل الوجبة');
+    setShowSuccess(true);
+  } catch (error) {
+    console.error('خطأ:', error);
+    setSuccessMessage('حدث خطأ');
+    setShowSuccess(true);
+  } finally {
+    setLoadingItemId(null); // ✅ إنهاء التحميل
+  }
+};
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -348,37 +443,48 @@ export function MainInfo({
                 {/* الشعار */}
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
                   <label className="block text-sm font-semibold text-gray-900 mb-3">شعار المطعم</label>
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      {formData.logo ? (
-                        <img src={formData.logo} alt={formData.name} className="w-20 h-20 rounded-xl object-cover border border-gray-200" />
-                      ) : (
-                        <div 
-                          className="w-20 h-20 rounded-xl flex items-center justify-center text-white text-2xl font-bold"
-                          style={{ backgroundColor: primaryColor }}
-                        >
-                          {formData.name.charAt(0)}
-                        </div>
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        {formData.logo ? (
+                          // تم تعديل الكلاسز هنا لتطابق الإطار الثاني
+                          <div 
+                            className="relative w-20 h-20 md:w-24 md:h-24 bg-white rounded-full shadow-2xl overflow-hidden flex items-center justify-center p-2"
+                            style={{ boxShadow: `0 0 20px ${primaryColor}` }}
+                          >
+                            <img 
+                              src={formData.logo} 
+                              alt={formData.name} 
+                              className="w-full h-full object-contain" // تم تغيير object-cover إلى object-contain
+                            />
+                          </div>
+                        ) : (
+                          // حالة عدم وجود صورة (الاحرف الأولى) - تم تعديلها أيضاً لتكون دائرية
+                          <div 
+                            className="w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-2xl"
+                            style={{ backgroundColor: primaryColor, boxShadow: `0 0 20px ${primaryColor}` }}
+                          >
+                            {formData.name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      {isEditing && (
+                        <label className="cursor-pointer">
+                          <div className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-green-200 rounded-lg transition-colors flex items-center gap-2 block text-sm font-semibold text-gray-900 mb-3">
+                            <Upload className="w-3.5 h-3.5" />
+                            {uploading ? 'جاري الرفع...' : 'تغيير الشعار'}
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleImageUpload(file, 'logo');
+                            }}
+                          />
+                        </label>
                       )}
                     </div>
-                    {isEditing && (
-                      <label className="cursor-pointer">
-                        <div className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-green-200 rounded-lg transition-colors flex items-center gap-2 block text-sm font-semibold text-gray-900 mb-3">
-                          <Upload className="w-3.5 h-3.5" />
-                          {uploading ? 'جاري الرفع...' : 'تغيير الشعار'}
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleImageUpload(file, 'logo');
-                          }}
-                        />
-                      </label>
-                    )}
-                  </div>
                 </div>
 
                 {/* اسم المطعم */}
@@ -390,7 +496,7 @@ export function MainInfo({
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-opacity-50"
-                      style={{ focusRingColor: primaryColor }}
+                      style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     />
                   ) : (
                     <p className="text-gray-900">{formData.name}</p>
@@ -406,7 +512,7 @@ export function MainInfo({
                       value={formData.phone || ''}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-opacity-50"
-                      style={{ focusRingColor: primaryColor }}
+                      style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     />
                   ) : (
                     <p className="text-gray-900">{formData.phone || 'غير مضاف'}</p>
@@ -422,7 +528,7 @@ export function MainInfo({
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-opacity-50"
-                      style={{ focusRingColor: primaryColor }}
+                      style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     />
                   ) : (
                     <p className="text-gray-900">{formData.address || 'غير مضاف'}</p>
@@ -440,7 +546,7 @@ export function MainInfo({
                       value={formData.currency}
                       onChange={(e) => setFormData({ ...formData, currency: e.target.value as Currency })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-opacity-50"
-                      style={{ focusRingColor: primaryColor }}
+                      style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     >
                       <option value="SYP">ليرة سورية (ل.س)</option>
                       <option value="TRY">ليرة تركية (₺)</option>
@@ -460,15 +566,32 @@ export function MainInfo({
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
                   <label className="block text-sm font-semibold text-gray-900 mb-2">رسوم الخدمة</label>
                   {isEditing ? (
-                    <input
-                      type="number"
-                      value={formData.serviceFee}
-                      onChange={(e) => setFormData({ ...formData, serviceFee: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-opacity-50"
-                      style={{ focusRingColor: primaryColor }}
-                    />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.serviceFee}
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    value = value.replace(/[^0-9.]/g, '');
+                    const parts = value.split('.');
+                    if (parts.length > 2) {
+                      value = parts[0] + '.' + parts.slice(1).join('');
+                    }
+                    setFormData({ ...formData, serviceFee: value as any }); // as any هنا
+                  }}
+                  onBlur={() => {
+                    let value = formData.serviceFee.toString();
+                    let num = parseFloat(value);
+                    if (isNaN(num)) num = 0;
+                    if (num < 0) num = 0;
+                    setFormData({ ...formData, serviceFee: num });
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  placeholder="مثال: 2.5"
+                />
                   ) : (
-                    <p className="text-gray-900">{formData.serviceFee}%</p>
+                    <p className="text-gray-900">{formData.serviceFee} {formData.currency === 'SYP' ? 'ليرة سورية' : formData.currency === 'TRY' ? 'ليرة تركية' : 'دولار أمريكي'}</p>
                   )}
                 </div>
 
@@ -505,42 +628,47 @@ export function MainInfo({
                 {isEditing && (
                   <button
                     onClick={() => setShowCategoryInput(true)}
-                    className="px-3 py-1.5 text-sm rounded-lg flex items-center gap-1"
-                    style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}
+                    className="px-4 py-2 text-sm rounded-lg flex items-center gap-2 font-medium transition-all duration-200 hover:shadow-md active:scale-95"
+                    style={{ 
+                      backgroundColor: primaryColor,
+                      color: 'white'
+                    }}
                   >
-                    <FolderPlus className="w-3.5 h-3.5" />
-                    إضافة فئة
+                    <FolderPlus className="w-4 h-4" />
+                    إضافة فئة جديدة
                   </button>
                 )}
               </div>
 
               {showCategoryInput && isEditing && (
-                <div className="flex gap-2 mb-4">
+                <div className="flex flex-col sm:flex-row gap-2 mb-4">
                   <input
                     type="text"
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
                     placeholder="اسم الفئة..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                    style={{ focusRingColor: primaryColor }}
+                    className="w-full sm:flex-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
+                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
                   />
-                  <button
-                    onClick={handleAddCategory}
-                    className="px-4 py-2 text-white rounded-lg"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    إضافة
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowCategoryInput(false);
-                      setNewCategory('');
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                  >
-                    إلغاء
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleAddCategory}
+                      className="flex-1 sm:flex-none px-4 py-2 text-white rounded-lg"
+                      style={{ backgroundColor: primaryColor }}
+                    >
+                      إضافة
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowCategoryInput(false);
+                        setNewCategory('');
+                      }}
+                      className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -655,23 +783,45 @@ export function MainInfo({
                       </div>
 
                       <div className="flex gap-2">
-                        {item.isActive ? (
-                          <button
-                            onClick={() => handleOutOfStock(item.id)}
-                            className="flex-1 px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1"
-                          >
-                            <PackageX className="w-3.5 h-3.5" />
-                            نفذت الكمية
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleActivateItem(item.id)}
-                            className="flex-1 px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            تفعيل
-                          </button>
-                        )}
+                          {item.isActive ? (
+                            <motion.button
+                              onClick={() => handleOutOfStock(item.id)}
+                              disabled={loadingItemId === item.id}
+                              className="flex-1 px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              whileTap={loadingItemId !== item.id ? { scale: 0.95 } : {}}
+                            >
+                              {loadingItemId === item.id ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  يتم الغاء عرض الوجبة لدى العملاء
+                                </>
+                              ) : (
+                                <>
+                                  <PackageX className="w-3.5 h-3.5" />
+                                  نفذت الكمية
+                                </>
+                              )}
+                            </motion.button>
+                          ) : (
+                            <motion.button
+                              onClick={() => handleActivateItem(item.id)}
+                              disabled={loadingItemId === item.id}
+                              className="flex-1 px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              whileTap={loadingItemId !== item.id ? { scale: 0.95 } : {}}
+                            >
+                              {loadingItemId === item.id ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  يتم تفعيل عرض الوجبة لدى العملاء
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  توفرت الكمية
+                                </>
+                              )}
+                            </motion.button>
+                          )}
                         <button
                           onClick={() => handleEditMenuItem(item)}
                           className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
@@ -689,168 +839,328 @@ export function MainInfo({
       </AnimatePresence>
 
       {/* مودال إضافة/تعديل وجبة */}
-      {(showAddModal) && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
-            style={{ 
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                WebkitOverflowScrolling: 'touch'
+
+{(showAddModal) && (
+  <div 
+    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    onClick={(e) => {
+      // إغلاق المودال عند النقر خارج المحتوى
+      if (e.target === e.currentTarget) {
+        setShowAddModal(false);
+        setEditingItem(null);
+      }
+    }}
+  >
+    {/* محتوى المودال */}
+    <div 
+      className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+      onClick={(e) => e.stopPropagation()} // ← أضف هذا
+      style={{ 
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch'
+      }}
+    >
+      <style jsx>{`
+        div::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+      
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-5">
+          <h3 className="text-xl font-bold text-gray-900">
+            {editingItem ? 'تعديل الوجبة' : 'إضافة وجبة جديدة'}
+          </h3>
+          <button
+            onClick={() => {
+              setShowAddModal(false);
+              setEditingItem(null);
             }}
-            >
-            <style jsx>{`
-                div::-webkit-scrollbar {
-                display: none;
-                }
-            `}</style>
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-5">
-                <h3 className="text-xl font-bold text-gray-900">
-                  {editingItem ? 'تعديل الوجبة' : 'إضافة وجبة جديدة'}
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditingItem(null);
-                  }}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                {/* صورة الوجبة */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1">صورة الوجبة</label>
-                  <div className="flex items-center gap-3">
-                    {(editingItem?.image || newItem.image) ? (
-                      <img 
-                        src={editingItem?.image || newItem.image} 
-                        alt="Preview" 
-                        className="w-16 h-16 rounded-lg object-cover border"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center border">
-                        <ImageIcon className="w-6 h-6 text-gray-400" />
-                      </div>
-                    )}
-                    <label className="cursor-pointer">
-                      <div className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-2 block text-sm font-semibold text-gray-900 mb-1">
-                        <Upload className="w-3.5 h-3.5" />
-                        {uploading ? 'جاري الرفع...' : 'رفع صورة'}
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageUpload(file, 'menu');
-                        }}
-                      />
-                    </label>
+            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* الجانب الأيسر: نموذج الإدخال */}
+          <div className="space-y-4">
+            {/* صورة الوجبة */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-1">صورة الوجبة</label>
+              <div className="flex items-center gap-3">
+                {(editingItem?.image || newItem.image) ? (
+                  <img 
+                    src={editingItem?.image || newItem.image} 
+                    alt="Preview" 
+                    className="w-16 h-16 rounded-lg object-cover border"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center border">
+                    <ImageIcon className="w-6 h-6 text-gray-400" />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1">اسم الوجبة *</label>
+                )}
+                <label className="cursor-pointer">
+                  <div className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-green-200 rounded-lg transition-colors flex items-center gap-2 block text-sm font-semibold text-gray-900 mb-3">
+                    <Upload className="w-3.5 h-3.5" />
+                    {uploading ? 'جاري الرفع...' : 'رفع صورة'}
+                  </div>
                   <input
-                    type="text"
-                    value={editingItem ? editingItem.name : newItem.name}
-                    onChange={(e) => editingItem 
-                      ? setEditingItem({ ...editingItem, name: e.target.value })
-                      : setNewItem({ ...newItem, name: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                    style={{ focusRingColor: primaryColor }}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file, 'menu');
+                    }}
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1">الوصف</label>
-                  <textarea
-                    value={editingItem ? editingItem.description : newItem.description}
-                    onChange={(e) => editingItem
-                      ? setEditingItem({ ...editingItem, description: e.target.value })
-                      : setNewItem({ ...newItem, description: e.target.value })
-                    }
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                    style={{ focusRingColor: primaryColor }}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1">السعر *</label>
-                  <input
-                    type="number"
-                    value={editingItem ? editingItem.price : newItem.price}
-                    onChange={(e) => editingItem
-                      ? setEditingItem({ ...editingItem, price: parseFloat(e.target.value) })
-                      : setNewItem({ ...newItem, price: parseFloat(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                    style={{ focusRingColor: primaryColor }}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1">الفئة</label>
-                  <select
-                    value={editingItem ? editingItem.category : newItem.category}
-                    onChange={(e) => editingItem
-                      ? setEditingItem({ ...editingItem, category: e.target.value })
-                      : setNewItem({ ...newItem, category: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                    style={{ focusRingColor: primaryColor }}
-                  >
-                    <option value="">بدون فئة</option>
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1">وقت التحضير (دقيقة)</label>
-                  <input
-                    type="number"
-                    value={editingItem ? editingItem.preparationTime : newItem.preparationTime}
-                    onChange={(e) => editingItem
-                      ? setEditingItem({ ...editingItem, preparationTime: parseInt(e.target.value) })
-                      : setNewItem({ ...newItem, preparationTime: parseInt(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                    style={{ focusRingColor: primaryColor }}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditingItem(null);
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  إلغاء
-                </button>
-                <button
-                  onClick={() => editingItem ? handleUpdateMenuItem() : handleAddMenuItem()}
-                  className="flex-1 px-4 py-2 rounded-lg text-white transition-colors"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  {editingItem ? 'تحديث' : 'إضافة'}
-                </button>
+                </label>
               </div>
             </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-1">اسم الوجبة *</label>
+              <input
+                type="text"
+                value={editingItem ? editingItem.name : newItem.name}
+                onChange={(e) => editingItem 
+                  ? setEditingItem({ ...editingItem, name: e.target.value })
+                  : setNewItem({ ...newItem, name: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-1">الوصف</label>
+              <textarea
+                value={editingItem ? editingItem.description : newItem.description}
+                onChange={(e) => editingItem
+                  ? setEditingItem({ ...editingItem, description: e.target.value })
+                  : setNewItem({ ...newItem, description: e.target.value })
+                }
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-1">السعر *</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={editingItem ? editingItem.price : (newItem.price ?? '')}
+                onChange={(e) => {
+                  let value = e.target.value;
+                  value = value.replace(/[^0-9.]/g, '');
+                  const parts = value.split('.');
+                  if (parts.length > 2) {
+                    value = parts[0] + '.' + parts.slice(1).join('');
+                  }
+                  
+                  if (editingItem) {
+                    setEditingItem({ ...editingItem, price: value as any });
+                  } else {
+                    setNewItem({ ...newItem, price: value as any });
+                  }
+                }}
+                onBlur={() => {
+                  let value = editingItem 
+                    ? editingItem.price.toString() 
+                    : (newItem.price?.toString() ?? '0');
+                  
+                  let num = parseFloat(value);
+                  if (isNaN(num)) num = 0;
+                  if (num < 0) num = 0;
+                  
+                  if (editingItem) {
+                    setEditingItem({ ...editingItem, price: num });
+                  } else {
+                    setNewItem({ ...newItem, price: num });
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                placeholder="مثال: 15.5"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-1">الفئة</label>
+              <select
+                value={editingItem ? editingItem.category : newItem.category}
+                onChange={(e) => editingItem
+                  ? setEditingItem({ ...editingItem, category: e.target.value })
+                  : setNewItem({ ...newItem, category: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              >
+                <option value="">بدون فئة</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-1">وقت التحضير (دقيقة)</label>
+              <input
+                type="number"
+                value={editingItem ? editingItem.preparationTime : newItem.preparationTime}
+                onChange={(e) => editingItem
+                  ? setEditingItem({ ...editingItem, preparationTime: parseInt(e.target.value) || 0 })
+                  : setNewItem({ ...newItem, preparationTime: parseInt(e.target.value) || 0 })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              />
+            </div>
+          </div>
+
+          {/* الجانب الأيمن: معاينة الوجبة */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">معاينة شكل الوجبة اللذي يظهر للعملاء</h4>
+            <div className="flex justify-center">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 h-full flex flex-col
+                  max-w-full w-full md:max-w-[280px] lg:max-w-[260px] xl:max-w-[280px] mx-auto"
+              >
+                <div className="relative w-full overflow-hidden flex-shrink-0 
+                  aspect-[4/3] md:aspect-[1/1] lg:aspect-[1/1] 
+                  md:max-h-[200px] lg:max-h-[180px] xl:max-h-[200px]"
+                >
+                  {(editingItem?.image || newItem.image) ? (
+                    <>
+                      <img
+                        src={editingItem?.image || newItem.image}
+                        alt={editingItem?.name || newItem.name || 'الوجبة'}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                    </>
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <ImageIcon className="w-12 h-12 text-gray-300" />
+                    </div>
+                  )}
+                  
+                  <div 
+                    className="absolute bottom-2 right-2 px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-lg text-white font-bold text-xs sm:text-sm md:text-xs lg:text-xs"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    {(editingItem?.price || newItem.price || 0)} {getCurrencySymbol(restaurant.currency)}
+                  </div>
+                </div>
+                
+                <div className="p-2 sm:p-3 md:p-2.5 lg:p-2 flex-1 flex flex-col">
+                  <h3 className="text-sm sm:text-base md:text-sm lg:text-sm font-bold text-gray-800 mb-1 line-clamp-2">
+                    {editingItem?.name || newItem.name || 'اسم الوجبة'}
+                  </h3>
+                  
+                  <p className="text-gray-500 text-xs sm:text-sm md:text-xs lg:text-xs mb-1 line-clamp-2 md:line-clamp-2">
+                    {editingItem?.description || newItem.description || 'وصف الوجبة'}
+                  </p>
+                  
+                  <div className="flex-1" />
+                  
+                  <div className="flex items-center justify-between gap-2 mt-auto pt-1">
+                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 flex-shrink-0">
+                      <button
+                        className="p-1 sm:p-1.5 md:p-1 rounded-lg hover:bg-gray-200 transition-colors cursor-default"
+                        aria-label="إنقاص الكمية"
+                        disabled
+                      >
+                        <Minus size={12} className="text-gray-400" />
+                      </button>
+                      <span className="w-5 sm:w-6 md:w-5 text-center font-bold text-gray-800 text-xs sm:text-sm md:text-xs">
+                        0
+                      </span>
+                      <button
+                        className="p-1 sm:p-1.5 md:p-1 rounded-lg hover:bg-gray-200 transition-colors cursor-default"
+                        aria-label="زيادة الكمية"
+                        disabled
+                      >
+                        <Plus size={12} className="text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    className="flex items-center justify-center gap-1 px-2 mt-2 py-1.5 rounded-lg text-white font-semibold transition-all duration-300 text-xs opacity-70 cursor-default"
+                    style={{ backgroundColor: primaryColor }}
+                    disabled
+                    aria-label="إضافة إلى السلة"
+                  >
+                    <ShoppingBag size={12} />
+                    <span className="xs:inline text-xs">أضف للطلب</span>
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+            <p className="text-xs text-gray-400 text-center mt-3">* هذه معاينة توضيحية فقط</p>
           </div>
         </div>
-      )}
+
+        <div className="flex gap-3 mt-6">
+            {/* زر الإلغاء */}
+            <button
+              onClick={() => {
+                setShowAddModal(false);
+                setEditingItem(null);
+              }}
+              disabled={submitting} // تعطيل أثناء التحميل
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              إلغاء
+            </button>
+            
+            {/* زر الإضافة/التحديث مع أنيميشن */}
+            <motion.button
+              onClick={() => editingItem ? handleUpdateMenuItem() : handleAddMenuItem()}
+              disabled={submitting}
+              className="flex-1 px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              style={{ backgroundColor: primaryColor }}
+              // أنيميشن الضغط
+              whileTap={!submitting ? { scale: 0.97 } : {}}
+              // أنيميشن التمرير
+              whileHover={!submitting ? { scale: 1.02 } : {}}
+              // أنيميشن النبض المستمر (فقط عندما لا يكون في حالة تحميل)
+              animate={!submitting ? { 
+                boxShadow: [
+                  `0 0 0 0 ${primaryColor}40`,
+                  `0 0 0 4px ${primaryColor}30`,
+                  `0 0 0 0 ${primaryColor}40`
+                ]
+              } : {}}
+              transition={{ 
+                duration: 1.5, 
+                repeat: Infinity, 
+                repeatDelay: 1,
+                ease: "easeInOut"
+              }}
+            >
+              {submitting ? (
+                <>
+                  {/* أيقونة التحميل */}
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{editingItem ? 'جاري التحديث...' : 'جاري الإضافة...'}</span>
+                </>
+              ) : (
+                <span>{editingItem ? 'تحديث' : 'إضافة'}</span>
+              )}
+            </motion.button>
+          </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
