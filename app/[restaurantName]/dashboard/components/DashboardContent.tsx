@@ -132,12 +132,9 @@ function getTabDescription(tab: string, restaurantName: string): string {
  const handleUpdateRestaurant = async (data: Partial<Restaurant>) => {
   const result = await updateRestaurant(data);
   if (result.success && result.data) {
-    // تحديث بيانات المطعم في الواجهة بعد التعديل
-    // يمكنك استخدام state أو context لتحديث البيانات المعروضة
     console.log("Restaurant updated:", result.data);
   } else {
     throw new Error(result.error || "Failed to update restaurant");
-    // عرض رسالة خطأ للمستخدم إذا لزم الأمر
   }
  }
 const handleUpdateMenuItem = async (id: string, data: Partial<Omit<MenuItem, 'id'>>) => {
@@ -176,27 +173,23 @@ const handleUploadImage = async (file: File, type: 'logo' | 'menu', restaurantId
   if(type === 'logo'&&restaurantId){
     fileName = `logo_${restaurantId}.${fileExt}`;
   }
-    const filePath = `${type}s/${fileName}`; // مثلاً: logos/123456789_abc123.png;
+    const filePath = `${type}s/${fileName}`; 
   try {
-    // 2. رفع الصورة إلى Supabase Storage
     const { data, error } = await supabase_client.storage
-      .from('images') // اسم الـ bucket (ستنشئه لاحقاً)
+      .from('images') 
       .upload(filePath, file, {
         cacheControl: '0',
-        upsert: true, // لتحديث الصورة إذا كانت موجودة بالفعل
+        upsert: true, 
       });
 
     if (error) {
       console.error("Upload error:", error);
       throw error;
     }
-
-    // 3. الحصول على الرابط العام للصورة
     const { data: { publicUrl } } = supabase_client.storage
       .from('images')
       .getPublicUrl(filePath);
     
-    // 4. إرجاع الرابط لحفظه في قاعدة البيانات
     if(!publicUrl) throw new Error("فشل تحميل الصورة" ); 
     return publicUrl;
 
