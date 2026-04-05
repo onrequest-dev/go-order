@@ -9,6 +9,7 @@ import { DashboardContent } from './components/DashboardContent';
 import { Restaurant } from '@/types';
 import { getRestaurantData } from '@/lib/restaurant-data';
 import { Menu } from 'lucide-react';
+import { getRestaurant } from '@/client/helpers/restaurant';
 
 export default function DashboardPage() {
   const params = useParams();
@@ -25,9 +26,11 @@ export default function DashboardPage() {
     const fetchRestaurant = async () => {
       try {
         setLoading(true);
-        const data = await getRestaurantData(restaurantName);
+        const result = await getRestaurant();
+        const data = result?.data
+        if(!data) return;
         setRestaurant(data);
-        
+        console.log("Fetched restaurant data:", data);
         if (data.primaryColor) {
           document.documentElement.style.setProperty('--restaurant-primary', data.primaryColor);
         }

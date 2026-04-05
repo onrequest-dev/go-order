@@ -11,6 +11,7 @@ import { MonthlyStats } from './tabs/MonthlyStats';
 import { Profits } from './tabs/Profits';
 import { Employees } from './tabs/Employees';
 import { UpgradeDialog } from './UpgradeDialog';
+import { updateRestaurant } from '@/client/helpers/restaurant';
 
 interface DashboardContentProps {
   restaurant: Restaurant;
@@ -79,7 +80,7 @@ export function DashboardContent({ restaurant, activeTab }: DashboardContentProp
         
         {/* المحتوى */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {activeTab === 'main' && <MainInfo restaurant={restaurant} />}
+          {activeTab === 'main' && <MainInfo restaurant={restaurant} onUpdateRestaurant={handleUpdateRestaurant} />}
           {activeTab === 'orders' && <TableOrders restaurantId={restaurant.id} />}
           {activeTab === 'promo' && <PromoPages restaurantId={restaurant.id} />}
           {activeTab === 'delivery' && <DeliveryOrders restaurantId={restaurant.id} />}
@@ -117,3 +118,17 @@ function getTabDescription(tab: string, restaurantName: string): string {
   };
   return descriptions[tab] || 'إدارة متكاملة لمطعمك';
 }
+
+
+
+ const handleUpdateRestaurant = async (data: Partial<Restaurant>) => {
+  const result = await updateRestaurant(data);
+  if (result.success && result.data) {
+    // تحديث بيانات المطعم في الواجهة بعد التعديل
+    // يمكنك استخدام state أو context لتحديث البيانات المعروضة
+    console.log("Restaurant updated:", result.data);
+  } else {
+    throw new Error(result.error || "Failed to update restaurant");
+    // عرض رسالة خطأ للمستخدم إذا لزم الأمر
+  }
+ }
