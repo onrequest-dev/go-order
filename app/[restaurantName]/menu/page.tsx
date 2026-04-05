@@ -15,7 +15,7 @@ async function fetchRestaurant(slug: string): Promise<Restaurant | null> {
     const { data, error } = await supabase_server.rpc('get_restaurant_by_slug', {
       p_slug:  slug.trim().toLowerCase()
   });
-  console.log("Supabase response:", { data: data, error });
+  // console.log("Supabase response:", { data: data, error });
   return data as Restaurant;
   // return DEFAULT_RESTAURANT;
 }

@@ -8,7 +8,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const { subscription } = await request.json();
-     const jwt = request.cookies.get("jwt")?.value;
+    const jwt = request.cookies.get("jwt")?.value;
+    
     if (!jwt) {
         return NextResponse.json({ error: "Unauthorized - No token provided" }, { status: 401 });
     }
@@ -18,49 +19,38 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
     }
     
+    if (jwt_user.role !== 'admin' && jwt_user.role !== 'manager') {
+        return NextResponse.json({ error: "Forbidden - Insufficient permissions" }, { status: 403 });
+    }
     
-    // التحقق من وجود اشتراك سابق
-    const { data: existing } = await supabase_server
+    
+    const {  error } = await supabase_server
       .from('push_subscriptions')
-      .select('id')
-      .eq('user_id', jwt_user.id)
-      .eq('restaurant_id', jwt_user.restaurantId)
-      .single();
+      .upsert({
+        subscription: subscription,
+        restaurant_id: jwt_user.restaurantId,
+        user_id: jwt_user.device_id,
+        active: true,
+        updated_at: new Date()
+      }, {
+        onConflict: 'user_id', 
+        ignoreDuplicates: false
+      });
     
-    let result;
-    
-    if (existing) {
-      // تحديث الاشتراك الموجود
-      result = await supabase_server
-        .from('push_subscriptions')
-        .update({
-          subscription: subscription,
-          active: true,
-          updated_at: new Date()
-        })
-        .eq('id', existing.id);
-    } else {
-      // إدراج اشتراك جديد
-      result = await supabase_server
-        .from('push_subscriptions')
-        .insert({
-          subscription: subscription,
-          restaurant_id: jwt_user.restaurantId,
-          user_id: jwt_user.id,
-          active: true,
-          created_at: new Date(),
-          updated_at: new Date()
-        });
+    if (error) {
+      console.error('Upsert error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
-    if (result.error) {
-      throw result.error;
-    }
-    
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Subscribed successfully' 
+    });
     
   } catch (error) {
     console.error('Subscribe error:', error);
-    return NextResponse.json({ error: 'Failed to subscribe' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to subscribe' 
+    }, { status: 500 });
   }
 }

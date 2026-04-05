@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
 }
 
 const notifyOrderUpdate = async (restaurantId: string, status: string, orderId: string) => {
+    console.log("1")
     try {
         const { data: subscriptions } = await supabase_server
             .from('push_subscriptions')
@@ -68,7 +69,7 @@ const notifyOrderUpdate = async (restaurantId: string, status: string, orderId: 
                         type: 'NEW_ORDER',
                         orderId: orderId,
                         timestamp: Date.now(),
-                        silent: true
+                        silent: false
                     })
                 );
             } catch (err) {
