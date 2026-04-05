@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createJwt } from "@/server/jwt";
 
+
 export interface EmployeeLoginRequestBody {
   username: string;
   password: string;
@@ -31,7 +32,8 @@ export async function POST(request: NextRequest) {
         .eq("id", data.restaurant_id)
         .single();
         console.log("Restaurant data:", restuarantData, "Error:", restuarantError);
-    const jwt = createJwt({id: data.id, restaurantId: data.restaurant_id, role: data.role, subscriptionTier: restuarantData?.subscriptiontype , });
+        const device_id = crypto.randomUUID();
+    const jwt = createJwt({id: data.id, restaurantId: data.restaurant_id, role: data.role, subscriptionTier: restuarantData?.subscriptiontype , device_id:device_id });
     const res =  NextResponse.json({ slug: restuarantData?.slug }, { status: 200 });
     res.cookies.set("jwt", jwt || "", { path: "/", maxAge: 60 * 60 * 24 * 365 * 20, httpOnly: true });
     return res;
