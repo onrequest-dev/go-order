@@ -4,12 +4,14 @@
 import { useEffect, useState } from 'react';
 import { getPendingOrders, updateOrderStatus } from '@/client/helpers/dashboard';
 import { Order} from '@/types';
+import { useWebPush } from '@/hooks/useWebPush';
 
 export default function PendingOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+  
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -42,6 +44,13 @@ export default function PendingOrdersPage() {
     }
     setLoading(false);
   };
+   const { isSupported, isSubscribed, error, retry } = useWebPush({
+    onNewOrder: fetchOrders,
+    retryCount: 3,      // 3 محاولات
+    retryDelay: 5000    // 5 ثواني بين المحاولات
+  });
+
+  
 
   const handleCompleteOrder = async (orderId: string) => {
     setUpdatingId(orderId);
@@ -116,6 +125,9 @@ export default function PendingOrdersPage() {
                     </span>
                     <span className="text-gray-600">
                       ${(item.price * item.quantity).toFixed(2)}
+                    </span>
+                    <span className="text-gray-600">
+                      {(item.notes)}
                     </span>
                   </div>
                 ))}

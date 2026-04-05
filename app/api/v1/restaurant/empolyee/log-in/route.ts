@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         .eq("id", data.restaurant_id)
         .single();
         console.log("Restaurant data:", restuarantData, "Error:", restuarantError);
-    const jwt = createJwt({id: data.id, restaurantId: data.restaurant_id, role: data.role, subscriptionTier: restuarantData?.subscriptiontype});
+    const jwt = createJwt({id: data.id, restaurantId: data.restaurant_id, role: data.role, subscriptionTier: restuarantData?.subscriptiontype , });
     const res =  NextResponse.json({ slug: restuarantData?.slug }, { status: 200 });
     res.cookies.set("jwt", jwt || "", { path: "/", maxAge: 60 * 60 * 24 * 365 * 20, httpOnly: true });
     return res;
