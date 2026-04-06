@@ -65,6 +65,29 @@ export function Sidebar({ subscriptionType, isActive, restaurant, onClose }: Sid
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
   
+  // منع التمرير في الخلفية عند فتح نافذة إيقاف التشغيل
+useEffect(() => {
+  if (showShutdownModal) {
+    // حفظ قيمة التمرير الحالية
+    const scrollY = window.scrollY;
+    
+    // منع التمرير
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${scrollY}px`;
+    
+    // استرجاع التمرير عند الإغلاق
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      window.scrollTo(0, scrollY);
+    };
+  }
+}, [showShutdownModal]);
+
   const tabs = getAvailableTabs(subscriptionType as SubscriptionTier, isActive);
   const primaryColor = restaurant.primaryColor || '#f97316';
   

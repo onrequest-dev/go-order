@@ -66,18 +66,19 @@ export default function DashboardPage() {
   return (
     <div 
       className="min-h-screen"
-  style={{ 
-    background: `linear-gradient(135deg, ${primaryColor} 0%, #ffffff 100%)`,
-  }}
+      style={{ 
+        background: `linear-gradient(135deg, ${primaryColor} 0%, #ffffff 100%)`,
+      }}
       dir="rtl"
     >
+
       {/* تخطيط للشاشات الكبيرة: صف بجانب بعض */}
       <div className="hidden lg:flex min-h-screen relative">
         {/* Sidebar يطفو مع مسافة 10px */}
         <div className="fixed right-0 top-0 h-full z-50" style={{ marginRight: '10px' }}>
           <Sidebar 
             subscriptionType={restaurant.subscriptionType}
-            isActive={restaurant.isSubscriptionActive}
+            isActive={restaurant.isSubscriptionActive}//هون من المفترض يكون محطوطة دالة ايقاف التشغيل
             restaurant={restaurant}
             onClose={() => setSidebarOpen(false)}
           />
@@ -121,7 +122,7 @@ export default function DashboardPage() {
               <div className="fixed inset-y-0 right-0 z-50">
                 <Sidebar 
                   subscriptionType={restaurant.subscriptionType}
-                  isActive={restaurant.isSubscriptionActive}
+                  isActive={restaurant.isSubscriptionActive}///هون من المفترض يكون محطوطة دالة ايقاف التشغيل
                   restaurant={restaurant}
                   onClose={() => setSidebarOpen(false)}
                 />
