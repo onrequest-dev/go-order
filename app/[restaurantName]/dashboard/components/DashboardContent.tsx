@@ -83,10 +83,11 @@ export function DashboardContent({ restaurant, activeTab }: DashboardContentProp
         {/* المحتوى */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {activeTab === 'main' && <MainInfo 
-          restaurant={restaurant}
-           onUpdateRestaurant={handleUpdateRestaurant}
-            onUpdateMenuItem={handleUpdateMenuItem} 
+            restaurant={restaurant}
+            onUpdateRestaurant={handleUpdateRestaurant}
             onAddMenuItem={handleAddMenuItem}
+            onUpdateMenuItem={handleUpdateMenuItem} 
+            // onDeleteMenuItem={handleDeleteMenuItem} //شغلك المفروض هون بس مدري كيف صار تقول في غلط بترتيب الباراميترات
             onUploadImage={handleUploadImage}
             />}
           {activeTab === 'orders' && <TableOrders restaurantId={restaurant.id} />}

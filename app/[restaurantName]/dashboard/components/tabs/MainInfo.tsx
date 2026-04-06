@@ -19,7 +19,8 @@ import {
   Upload,
   Loader2,
   ShoppingBag,
-  Minus
+  Minus,
+  Trash2
 } from 'lucide-react';
 import { Restaurant, MenuItem, getCurrencySymbol, Currency } from '@/types';
 
@@ -39,6 +40,7 @@ export function MainInfo({
   onUpdateRestaurant, 
   onAddMenuItem, 
   onUpdateMenuItem,
+  onDeleteMenuItem,
   onUploadImage
 }: MainInfoProps) {
   // استرجاع التبويب النشط من localStorage
@@ -65,7 +67,13 @@ const [newCurrency, setNewCurrency] = useState<Currency | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [showCategoryInput, setShowCategoryInput] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  //قائمة الوجبات لتسهيل البحث عن وجبة معينة وتعديلها
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   // State للوجبات
   const [menuItems, setMenuItems] = useState<MenuItem[]>(restaurant.menu || []);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -84,28 +92,29 @@ const [newCurrency, setNewCurrency] = useState<Currency | null>(null);
   const primaryColor = restaurant.primaryColor || '#f97316';
 
 
-  // منع التمرير في الخلفية عند فتح المودال
+// منع التمرير في الخلفية عند فتح أي مودال
 useEffect(() => {
-  if (showAddModal) {
+  if (showAddModal || showCurrencyModal || showDeleteModal) {
     // حفظ قيمة overflow الحالية
     const originalOverflow = document.body.style.overflow;
+    const scrollY = window.scrollY;
+    
     // منع التمرير
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
-    document.body.style.top = `-${window.scrollY}px`;
+    document.body.style.top = `-${scrollY}px`;
     
     // استرجاع التمرير عند الإغلاق
     return () => {
-      const scrollY = document.body.style.top;
       document.body.style.overflow = originalOverflow;
       document.body.style.position = '';
       document.body.style.width = '';
       document.body.style.top = '';
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      window.scrollTo(0, scrollY);
     };
   }
-}, [showAddModal]);
+}, [showAddModal, showCurrencyModal, showDeleteModal]);
   // حفظ التبويب النشط
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
@@ -117,6 +126,37 @@ useEffect(() => {
       return () => clearTimeout(timer);
     }
   }, [showSuccess]);
+
+
+// حذف الوجبة
+const handleDeleteMenuItem = async () => {
+  if (!onDeleteMenuItem || !itemToDelete) return;
+  
+  setDeleting(true);
+  try {
+    await onDeleteMenuItem(itemToDelete.id);
+    // إزالة الوجبة من القائمة المحلية
+    setMenuItems(menuItems.filter(item => item.id !== itemToDelete.id));
+    setShowDeleteModal(false);
+    setItemToDelete(null);
+    
+    setSuccessMessage('تم حذف الوجبة بنجاح!');
+    setShowSuccess(true);
+  } catch (error) {
+    console.error('خطأ في حذف الوجبة:', error);
+    setSuccessMessage('حدث خطأ في حذف الوجبة');
+    setShowSuccess(true);
+  } finally {
+    setDeleting(false);
+  }
+};
+
+// فتح نافذة تأكيد الحذف
+const openDeleteModal = (item: MenuItem) => {
+  setItemToDelete(item);
+  setShowDeleteModal(true);
+};
+
 
   // رفع صورة
   const handleImageUpload = async (file: File, type: 'logo' | 'menu') => {
@@ -147,7 +187,7 @@ useEffect(() => {
     }
   };
 
-  // معالجة تغيير العملة مع التحذير
+// معالجة تغيير العملة مع التحذير
 const handleCurrencyChange = (currency: Currency) => {
   if (currency === formData.currency) return;
   
@@ -156,33 +196,20 @@ const handleCurrencyChange = (currency: Currency) => {
   setShowCurrencyModal(true);
 };
 
-// تأكيد تغيير العملة وتحديث الأسعار
+// تأكيد تغيير العملة
 const confirmCurrencyChange = async () => {
   if (!newCurrency) return;
   
-  setSaving(true);
-  try {
-    // تحديث عملة المطعم
-    await onUpdateRestaurant?.({ currency: newCurrency });
-    
-    // تحديث أسعار جميع الوجبات (اختياري: يمكنك تحويل الأسعار أو تركها كما هي)
-    // هنا نقوم بتحديث الـ state المحلي
-    setFormData({ ...formData, currency: newCurrency });
-    
-    // إذا أردت تحويل الأسعار تلقائياً (مثال: من دولار إلى ليرة)
-    // يمكنك إضافة منطق التحويل هنا
-    
-    setSuccessMessage('تم تغيير العملة بنجاح');
-    setShowSuccess(true);
-  } catch (error) {
-    console.error('خطأ:', error);
-    setSuccessMessage('حدث خطأ في تغيير العملة');
-    setShowSuccess(true);
-  } finally {
-    setSaving(false);
-    setShowCurrencyModal(false);
-    setNewCurrency(null);
-  }
+  // تحديث العملة محلياً فقط (دون حفظ في قاعدة البيانات)
+  setFormData({ ...formData, currency: newCurrency });
+  
+  // إغلاق النافذة
+  setShowCurrencyModal(false);
+  setNewCurrency(null);
+  
+  // عرض رسالة توضيحية
+  setSuccessMessage(`تم تغيير العملة إلى ${newCurrency === 'SYP' ? 'ليرة سورية' : newCurrency === 'TRY' ? 'ليرة تركية' : 'دولار أمريكي'}. لا تنس تحديث أسعار الوجبات!`);
+  setShowSuccess(true);
 };
 
 
@@ -209,31 +236,31 @@ const confirmCurrencyChange = async () => {
     setMenuItems(updatedMenu);
   };
 
-  // حفظ معلومات المطعم
-  const handleSave = async () => {
-    if (!onUpdateRestaurant) return;
+// حفظ معلومات المطعم
+const handleSave = async () => {
+  if (!onUpdateRestaurant) return;
+  
+  setSaving(true);
+  try {
+    await onUpdateRestaurant({
+      ...formData,
+      categories: categories
+    });
+    setSuccessMessage('تم حفظ البيانات بنجاح!');
+    setShowSuccess(true);
+    setIsEditing(false);
     
-    setSaving(true);
-    try {
-      await onUpdateRestaurant({
-        ...formData,
-        categories: categories
-      });
-      setSuccessMessage('تم حفظ البيانات بنجاح!');
-      setShowSuccess(true);
-      setIsEditing(false);
-      
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    } catch (error) {
-      console.error('خطأ:', error);
-      setSuccessMessage('حدث خطأ في حفظ البيانات');
-      setShowSuccess(true);
-    } finally {
-      setSaving(false);
-    }
-  };
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  } catch (error) {
+    console.error('خطأ:', error);
+    setSuccessMessage('حدث خطأ في حفظ البيانات');
+    setShowSuccess(true);
+  } finally {
+    setSaving(false);
+  }
+};
 
   // فتح تعديل الوجبة
   const handleEditMenuItem = (item: MenuItem) => {
@@ -349,21 +376,23 @@ const handleActivateItem = async (id: string) => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* رسالة النجاح */}
-      <AnimatePresence>
-        {showSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50"
-          >
-            <div className="flex items-center gap-2 px-5 py-2.5 bg-green-500 text-white rounded-full shadow-lg">
-              <CheckCircle2 className="w-4 h-4" />
-              <span className="text-sm font-medium">{successMessage}</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+<AnimatePresence>
+  {showSuccess && (
+    <motion.div
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -50 }}
+      className="fixed top-24 left-0 right-0 z-50 flex justify-center px-4"
+    >
+      <div className="flex items-center gap-2 px-5 py-2.5 bg-green-500 text-white rounded-full shadow-lg max-w-[90vw]">
+        <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+        <span className="text-sm font-medium text-center break-words">
+          {successMessage}
+        </span>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
       {/* التبويبات */}
       <div className="flex justify-center mb-8">
@@ -544,7 +573,7 @@ const handleActivateItem = async (id: string) => {
                   {isEditing ? (
                     <select
                       value={formData.currency}
-                      onChange={(e) => setFormData({ ...formData, currency: e.target.value as Currency })}
+                      onChange={(e) => handleCurrencyChange(e.target.value as Currency)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-opacity-50"
                       style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     >
@@ -554,7 +583,9 @@ const handleActivateItem = async (id: string) => {
                     </select>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold" style={{ color: primaryColor }}>{getCurrencySymbol(formData.currency)}</span>
+                      <span className="text-2xl font-bold" style={{ color: primaryColor }}>
+                        {getCurrencySymbol(formData.currency)}
+                      </span>
                       <span className="text-gray-600">
                         {formData.currency === 'SYP' ? 'ليرة سورية' : formData.currency === 'TRY' ? 'ليرة تركية' : 'دولار أمريكي'}
                       </span>
@@ -724,116 +755,252 @@ const handleActivateItem = async (id: string) => {
             </div>
 
             {/* قائمة الوجبات */}
-            {menuItems.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-                <UtensilsCrossed className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">لا توجد وجبات بعد</p>
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="mt-4 px-5 py-2 rounded-lg text-white"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  أضف أول وجبة
-                </button>
+            {/* قائمة الوجبات */}
+{menuItems.length === 0 ? (
+  <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+    <UtensilsCrossed className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+    <p className="text-gray-500">لا توجد وجبات بعد</p>
+    <button
+      onClick={() => setShowAddModal(true)}
+      className="mt-4 px-5 py-2 rounded-lg text-white"
+      style={{ backgroundColor: primaryColor }}
+    >
+      أضف أول وجبة
+    </button>
+  </div>
+) : (
+  <div className="w-full">
+    {/* ========== قسم الفلاتر في الأعلى ========== */}
+    <div className="mb-8 w-full">
+      {/* عنوان القسم */}
+      <div className="flex items-center justify-between mb-4">
+        {selectedCategory !== 'all' && (
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+            إلغاء التصفية
+          </button>
+        )}
+      </div>
+
+      {/* أزرار التصنيفات */}
+      <div className="flex flex-wrap gap-2">
+        {/* زر الكل */}
+        <button
+          onClick={() => setSelectedCategory('all')}
+          className={`
+            px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+            ${selectedCategory === 'all' 
+              ? 'text-white shadow-md' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }
+          `}
+          style={selectedCategory === 'all' ? { backgroundColor: primaryColor } : {}}
+        >
+          <div className="flex items-center gap-2">
+            <span>جميع الوجبات</span>
+            <span className={`
+              px-1.5 py-0.5 rounded-full text-xs font-medium
+              ${selectedCategory === 'all' ? 'bg-white/20' : 'bg-gray-200 text-gray-600'}
+            `}>
+              {menuItems.length}
+            </span>
+          </div>
+        </button>
+        
+        {/* أزرار التصنيفات */}
+        {categories.map((category) => {
+          const count = menuItems.filter(item => item.category === category).length;
+          if (count === 0) return null;
+          
+          return (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`
+                px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                ${selectedCategory === category 
+                  ? 'text-white shadow-md' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }
+              `}
+              style={selectedCategory === category ? { backgroundColor: primaryColor } : {}}
+            >
+              <div className="flex items-center gap-2">
+                <span>{category}</span>
+                <span className={`
+                  px-0.5 py-0.2 rounded-full text-xs font-medium
+                  ${selectedCategory === category ? 'bg-white/20' : 'bg-gray-200 text-gray-600'}
+                `}>
+                  {count}
+                </span>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {menuItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`bg-white rounded-xl border overflow-hidden transition-all ${
-                      !item.isActive ? 'opacity-60' : 'hover:shadow-lg'
-                    }`}
+            </button>
+          );
+        })}
+      </div>
+      
+      {/* رسالة عدم وجود وجبات في التصنيف */}
+      {menuItems.filter(item => selectedCategory === 'all' || item.category === selectedCategory).length === 0 && (
+        <div className="text-center py-12 bg-gray-50 rounded-xl mt-6 border border-gray-100">
+          <PackageX className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">لا توجد وجبات في هذا التصنيف</p>
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className="mt-3 text-sm hover:underline"
+            style={{ color: primaryColor }}
+          >
+            عرض جميع الوجبات
+          </button>
+        </div>
+      )}
+    </div>
+
+    {/* ========== قسم الوجبات في الأسفل - 3 في كل صف ========== */}
+    {menuItems.filter(item => selectedCategory === 'all' || item.category === selectedCategory).length > 0 && (
+      <>
+        {/* شبكة الوجبات - متمركزة */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+          {menuItems
+            .filter(item => selectedCategory === 'all' || item.category === selectedCategory)
+            .map((item) => (
+              <div
+                key={item.id}
+                className={`group bg-white rounded-xl border overflow-hidden transition-all duration-300 w-full ${
+                  !item.isActive ? 'opacity-60' : 'hover:shadow-lg hover:-translate-y-1'
+                }`}
+              >
+                {/* صورة الوجبة */}
+                <div className="relative h-48 bg-gray-100 overflow-hidden">
+                  {item.image ? (
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="w-12 h-12 text-gray-300" />
+                    </div>
+                  )}
+                  {!item.isActive && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">غير متوفرة</span>
+                    </div>
+                  )}
+                  {/* السعر على الصورة */}
+                  <div 
+                    className="absolute bottom-2 right-2 px-2 py-1 rounded-lg text-white text-sm font-bold shadow-lg"
+                    style={{ backgroundColor: `${primaryColor}cc` }}
                   >
-                    <div className="relative h-40 bg-gray-100">
-                      {item.image ? (
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ImageIcon className="w-12 h-12 text-gray-300" />
-                        </div>
-                      )}
-                      {!item.isActive && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">غير متوفرة</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-gray-900">{item.name}</h3>
-                        <span className="text-lg font-bold" style={{ color: primaryColor }}>
-                          {getCurrencySymbol(restaurant.currency)} {item.price}
-                        </span>
-                      </div>
-                      
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
-                      
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
-                        {item.category && (
-                          <span className="px-2 py-1 bg-gray-100 rounded-full">{item.category}</span>
-                        )}
-                        {item.preparationTime && (
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{item.preparationTime} دقيقة</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                          {item.isActive ? (
-                            <motion.button
-                              onClick={() => handleOutOfStock(item.id)}
-                              disabled={loadingItemId === item.id}
-                              className="flex-1 px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                              whileTap={loadingItemId !== item.id ? { scale: 0.95 } : {}}
-                            >
-                              {loadingItemId === item.id ? (
-                                <>
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  يتم الغاء عرض الوجبة لدى العملاء
-                                </>
-                              ) : (
-                                <>
-                                  <PackageX className="w-3.5 h-3.5" />
-                                  نفذت الكمية
-                                </>
-                              )}
-                            </motion.button>
-                          ) : (
-                            <motion.button
-                              onClick={() => handleActivateItem(item.id)}
-                              disabled={loadingItemId === item.id}
-                              className="flex-1 px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                              whileTap={loadingItemId !== item.id ? { scale: 0.95 } : {}}
-                            >
-                              {loadingItemId === item.id ? (
-                                <>
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  يتم تفعيل عرض الوجبة لدى العملاء
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  توفرت الكمية
-                                </>
-                              )}
-                            </motion.button>
-                          )}
-                        <button
-                          onClick={() => handleEditMenuItem(item)}
-                          className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-                        >
-                          تعديل
-                        </button>
-                      </div>
-                    </div>
+                    {getCurrencySymbol(restaurant.currency)} {item.price}
                   </div>
-                ))}
+                </div>
+
+                {/* معلومات الوجبة */}
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-gray-900 line-clamp-1 text-base">{item.name}</h3>
+                  </div>
+                  
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2 min-h-[40px]">
+                    {item.description || "لا يوجد وصف"}
+                  </p>
+                  
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
+                    {item.category && (
+                      <span 
+                        className="px-2 py-1 rounded-full text-xs"
+                        style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
+                      >
+                        {item.category}
+                      </span>
+                    )}
+                    {item.preparationTime && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{item.preparationTime} دقيقة</span>
+                      </div>
+                    )}
+                  </div>
+
+
+                  {/* الأزرار */}
+                  <div className="flex gap-2 mb-2">
+                    <button
+                      onClick={() => handleEditMenuItem(item)}
+                      className="flex-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      تعديل
+                    </button>
+                    
+                    <button
+                      onClick={() => openDeleteModal(item)}
+                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center group relative"
+                      title="حذف الوجبة"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                    {/* الأزرار الخاصة بتغيير الحالة (نفذت/تفعيل) */}
+                  <div className="flex gap-2">
+                    {item.isActive ? (
+                      <motion.button
+                        onClick={() => handleOutOfStock(item.id)}
+                        disabled={loadingItemId === item.id}
+                        className="flex-1 px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-900 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileTap={loadingItemId !== item.id ? { scale: 0.95 } : {}}
+                      >
+                        {loadingItemId === item.id ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            يتم الغاء عرض الوجبة لدى الزبائن . . .
+                          </>
+                        ) : (
+                          <>
+                            <PackageX className="w-3.5 h-3.5" />
+                            نفذت
+                          </>
+                        )}
+                      </motion.button>
+                    ) : (
+                      <motion.button
+                        onClick={() => handleActivateItem(item.id)}
+                        disabled={loadingItemId === item.id}
+                        className="flex-1 px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-900 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileTap={loadingItemId !== item.id ? { scale: 0.95 } : {}}
+                      >
+                        {loadingItemId === item.id ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            يتم تفعيل عرض الوجبة لدى الزبائن . . .
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            تفعيل
+                          </>
+                        )}
+                      </motion.button>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+            ))}
+        </div>
+
+        {/* عداد النتائج */}
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-400">
+            عرض {menuItems.filter(item => selectedCategory === 'all' || item.category === selectedCategory).length} من أصل {menuItems.length} وجبة
+          </p>
+        </div>
+      </>
+    )}
+  </div>
+)}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1157,6 +1324,158 @@ const handleActivateItem = async (id: string) => {
               )}
             </motion.button>
           </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* نافذة تأكيد تغيير العملة */}
+{showCurrencyModal && (
+  <div 
+    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+    onClick={(e) => {
+      // إغلاق النافذة عند النقر خارج المحتوى
+      if (e.target === e.currentTarget) {
+        setShowCurrencyModal(false);
+        setNewCurrency(null);
+      }
+    }}
+  >
+    <div 
+      className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* رأس التنبيه */}
+      <div className="bg-red-50 p-4 border-b border-red-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-bold text-gray-900">تحذير: تغيير العملة</h3>
+        </div>
+      </div>
+      
+      {/* محتوى التنبيه */}
+      <div className="p-6">
+        <div className="space-y-4">
+          <p className="text-gray-700 leading-relaxed">
+            <span className="font-semibold text-red-600">تنبيه مهم:</span> تغيير العملة سيؤدي إلى عرض قائمة الوجبات للعملاء برمز العملة الجديد.
+          </p>
+          
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <p className="text-yellow-800 text-sm">
+              ⚠️ <span className="font-semibold">ملاحظة:</span> سيتوجب عليك تحديث أسعار جميع الوجبات يدوياً لتتوافق مع سعر الصرف الجديد.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+            <p>العملة الحالية: <span className="font-semibold">{formData.currency === 'SYP' ? 'ليرة سورية' : formData.currency === 'TRY' ? 'ليرة تركية' : 'دولار أمريكي'}</span></p>
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+            <p>العملة الجديدة: <span className="font-semibold text-green-600">{newCurrency === 'SYP' ? 'ليرة سورية' : newCurrency === 'TRY' ? 'ليرة تركية' : 'دولار أمريكي'}</span></p>
+          </div>
+        </div>
+      </div>
+      
+      {/* أزرار التحكم */}
+      <div className="flex gap-3 p-6 pt-0">
+        <button
+          onClick={() => {
+            setShowCurrencyModal(false);
+            setNewCurrency(null);
+          }}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+        >
+          إلغاء
+        </button>
+        <button
+          onClick={confirmCurrencyChange}
+          className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
+          تأكيد التغيير
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* نافذة تأكيد حذف الوجبة */}
+{showDeleteModal && itemToDelete && (
+  <div 
+    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+    onClick={(e) => {
+      if (e.target === e.currentTarget) {
+        setShowDeleteModal(false);
+        setItemToDelete(null);
+      }
+    }}
+  >
+    <div 
+      className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* رأس التنبيه */}
+      <div className="bg-red-50 p-4 border-b border-red-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+            <Trash2 className="w-5 h-5 text-red-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900">تأكيد الحذف</h3>
+        </div>
+      </div>
+      
+      {/* محتوى التنبيه */}
+      <div className="p-6">
+        <div className="space-y-4">
+          <p className="text-gray-700 leading-relaxed">
+            هل أنت متأكد من حذف وجبة <span className="font-semibold text-red-600">"{itemToDelete.name}"</span>؟
+          </p>
+          
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <p className="text-yellow-800 text-sm">
+              ⚠️ <span className="font-semibold">تنبيه:</span> هذا الإجراء لا يمكن التراجع عنه. سيتم حذف الوجبة نهائياً من القائمة.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      {/* أزرار التحكم */}
+      <div className="flex gap-3 p-6 pt-0">
+        <button
+          onClick={() => {
+            setShowDeleteModal(false);
+            setItemToDelete(null);
+          }}
+          disabled={deleting}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          إلغاء
+        </button>
+        <button
+          onClick={handleDeleteMenuItem}
+          disabled={deleting}
+          className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {deleting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              جاري الحذف...
+            </>
+          ) : (
+            <>
+              <Trash2 className="w-4 h-4" />
+              تأكيد الحذف
+            </>
+          )}
+        </button>
       </div>
     </div>
   </div>
