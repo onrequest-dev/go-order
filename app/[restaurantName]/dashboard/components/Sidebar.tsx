@@ -17,6 +17,8 @@ import {
   LogOut,
   Settings,
   X,
+  Headphones,
+  Power,
   Crown
 } from 'lucide-react';
 import { Restaurant, getAvailableTabs, SubscriptionTier } from '@/types';
@@ -51,6 +53,7 @@ export function Sidebar({ subscriptionType, isActive, restaurant, onClose }: Sid
   const router = useRouter();
   const currentTab = searchParams.get('tab') || 'main';
   const [isMobile, setIsMobile] = useState(false);
+  const [showShutdownModal, setShowShutdownModal] = useState(false); // ✅ أضف هذا
   
   // التحقق من حجم الشاشة
   useEffect(() => {
@@ -76,13 +79,38 @@ export function Sidebar({ subscriptionType, isActive, restaurant, onClose }: Sid
     `;
   };
   
-  const handleNavigation = (tabPath: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    router.push(`?tab=${tabPath}`);
-    if (isMobile) {
-      onClose();
-    }
-  };
+const handleNavigation = (tabPath: string, e: React.MouseEvent) => {
+  e.preventDefault();
+  router.push(`?tab=${tabPath}`);
+  if (isMobile) {
+    onClose();
+  }
+};
+
+// ✅ أضف هذه الدالة الجديدة
+const handleShutdown = async () => {
+  try {
+    // هنا يمكنك إضافة API اتصال لإيقاف تشغيل المطعم
+    // const response = await fetch('/api/restaurant/shutdown', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ restaurantId: restaurant.id })
+    // });
+    
+    // عرض رسالة نجاح (اختياري)
+    alert('تم إيقاف تشغيل المطعم بنجاح');
+    
+    // إغلاق النافذة أو التوجيه
+    window.close();
+    // router.push('/restaurant-closed');
+  } catch (error) {
+    console.error('خطأ في إيقاف التشغيل:', error);
+    alert('حدث خطأ أثناء إيقاف التشغيل');
+  }
+  setShowShutdownModal(false);
+};
+
+  
   
   return (
     <>
@@ -322,22 +350,25 @@ export function Sidebar({ subscriptionType, isActive, restaurant, onClose }: Sid
         
         {/* footer مع إجراءات سريعة */}
         <div className="p-4 border-t border-gray-100 space-y-2">
-          <motion.button 
-            whileHover={!isMobile ? { scale: 1.02, x: -5 } : {}}
-            whileTap={{ scale: 0.98 }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 transition-all duration-200 group"
-          >
-            <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-            <span className="font-medium">الإعدادات</span>
-          </motion.button>
+          <Link href="/Customer-Service">
+            <motion.button 
+              whileHover={!isMobile ? { scale: 1.02, x: -5 } : {}}
+              whileTap={{ scale: 0.98 }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-blue-600 hover:bg-blue-50 transition-all duration-200 group"
+            >
+              <Headphones className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+              <span className="font-medium">خدمة العملاء</span>
+            </motion.button>
+          </Link>
           
           <motion.button 
             whileHover={!isMobile ? { scale: 1.02, x: -5 } : {}}
             whileTap={{ scale: 0.98 }}
+            onClick={() => setShowShutdownModal(true)}  // ✅ فتح النافذة بدلاً من confirm
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200 group"
           >
-            <LogOut className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-            <span className="font-medium">تسجيل الخروج</span>
+            <Power className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+            <span className="font-medium">إيقاف التشغيل</span>
           </motion.button>
         </div>
         
@@ -359,6 +390,82 @@ export function Sidebar({ subscriptionType, isActive, restaurant, onClose }: Sid
           />
         )}
       </motion.div>
+
+          <motion.div 
+      initial={{ x: isMobile ? '100%' : 0 }}
+      animate={{ x: 0 }}
+      exit={{ x: isMobile ? '100%' : 0 }}
+      // ... باقي خصائص المكون
+    >
+      {/* ... كل المحتوى الموجود داخل الـ Sidebar ... */}
+    </motion.div>
+
+    {/* ✅ نافذة تأكيد إيقاف التشغيل - توضع هنا خارج الـ Sidebar الرئيسي */}
+    <AnimatePresence>
+      {showShutdownModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="relative bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* رأس النافذة */}
+            <div className="text-center pt-6 pb-2 px-6">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 bg-red-100">
+                <Power size={32} className="text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">تأكيد إيقاف التشغيل</h3>
+            </div>
+
+            {/* المحتوى */}
+            <div className="px-6 pb-6">
+              <div className="bg-amber-50 rounded-xl p-4 mb-4 border-r-4 border-amber-500">
+                <p className="text-amber-800 text-sm font-medium mb-2"> تحذير هام:</p>
+                <p className="text-gray-700 text-sm leading-relaxed">إيقاف التشغيل سيؤدي إلى:</p>
+                <ul className="text-gray-600 text-sm mt-2 space-y-1 mr-4">
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                    إيقاف جميع الطلبات النشطة والحجوزات
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                    ظهور المطعم كـ "مغلق" للعملاء (المطعم خارج فترة العمل)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                    عدم قدرة العملاء على تقديم طلبات جديدة
+                  </li>
+                </ul>
+              </div>
+
+              <p className="text-gray-500 text-sm text-center mb-6">
+                هل أنت متأكد من رغبتك في إيقاف تشغيل المطعم؟
+              </p>
+
+              {/* الأزرار */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleShutdown}
+                  className="flex-1 py-2.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 transition-all"
+                >
+                  <Power size={18} />
+                  نعم، إيقاف التشغيل
+                </button>
+                <button
+                  onClick={() => setShowShutdownModal(false)}
+                  className="flex-1 py-2.5 rounded-xl text-gray-600 font-bold border border-gray-200 hover:bg-gray-50 transition-all"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
     </>
   );
 }

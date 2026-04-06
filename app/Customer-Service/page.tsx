@@ -251,10 +251,10 @@ export default function CustomerService() {
           className="w-full px-5 py-3.5 rounded-xl bg-white/10 border border-white/20 text-white focus:border-[#FF8C42] focus:ring-2 focus:ring-[#FF8C42]/30 transition-all outline-none [&>option]:bg-[#1A2A4F]"
         >
           <option value="" className="bg-[#1A2A4F]">اختر نوع الخدمة</option>
-          <option value="trial" className="bg-[#1A2A4F]">✨ تجربة مجانية - 14 يوم</option>
-          <option value="normal" className="bg-[#1A2A4F]">📋 اشتراك Normal</option>
-          <option value="pro" className="bg-[#1A2A4F]">⭐ اشتراك Pro</option>
-          <option value="plus" className="bg-[#1A2A4F]">👑 اشتراك Plus</option>
+          <option value="trial" className="bg-[#1A2A4F]"> تجربة مجانية - 14 يوم</option>
+          <option value="normal" className="bg-[#1A2A4F]"> اشتراك Normal</option>
+          <option value="pro" className="bg-[#1A2A4F]"> اشتراك Pro</option>
+          <option value="plus" className="bg-[#1A2A4F]"> اشتراك Plus</option>
         </select>
       </div>
 
@@ -575,8 +575,8 @@ export default function CustomerService() {
           className="w-full px-5 py-3.5 rounded-xl bg-white/10 border border-white/20 text-white focus:border-[#FF8C42] focus:ring-2 focus:ring-[#FF8C42]/30 transition-all outline-none [&>option]:bg-[#1A2A4F]"
         >
           <option value="" className="bg-[#1A2A4F]">اختر نوع الطلب</option>
-          <option value="ticket" className="bg-[#1A2A4F]">🎫 تذكرة بكلمة المرور</option>
-          <option value="change" className="bg-[#1A2A4F]">🔄 تغيير كلمة المرور</option>
+          <option value="ticket" className="bg-[#1A2A4F]"> تذكرة بكلمة المرور</option>
+          <option value="change" className="bg-[#1A2A4F]"> تغيير كلمة المرور</option>
         </select>
       </div>
 
