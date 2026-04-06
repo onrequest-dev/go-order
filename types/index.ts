@@ -32,7 +32,8 @@ export interface Order {
   customerName?: string;//اسم العميل(للطلبات الخارجية)
   customerPhone?: string;//رقم هاتف العميل(للطلبات الخارجية)
   deliveryAddress?: string;//عنوان التوصيل(للطلبات الخارجية)
-  note?: string
+  note?: string;
+  modified_at?: Date;//تاريخ آخر تعديل على الطلب (مشان جماعة الإحصائيات)  
 }
 
 export interface OrderItem {

@@ -35,7 +35,7 @@ export default function NotFound() {
           GoOrder
         </p>
         <p className="text-gray-500 mb-3">
-          by onRequst
+          by onRequest
         </p>
       </div>
     </div>
