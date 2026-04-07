@@ -12,7 +12,7 @@ import { Profits } from './tabs/Profits';
 import { Employees } from './tabs/Employees';
 import { UpgradeDialog } from './UpgradeDialog';
 import { updateRestaurant } from '@/client/helpers/restaurant';
-import { createMenuItem, updateMenuItem } from '@/client/helpers/menu_item';
+import { createMenuItem, deleteMenuItem, updateMenuItem } from '@/client/helpers/menu_item';
 import { supabase_client } from '@/lib/supabase-client';
 
 interface DashboardContentProps {
@@ -61,7 +61,6 @@ export function DashboardContent({ restaurant, activeTab }: DashboardContentProp
           isOpen={showUpgradeDialog} 
           onClose={() => setShowUpgradeDialog(false)}
           restaurantId={restaurant.id}
-          currentTier={restaurant.subscriptionType}
         />
       </div>
     );
@@ -87,7 +86,7 @@ export function DashboardContent({ restaurant, activeTab }: DashboardContentProp
             onUpdateRestaurant={handleUpdateRestaurant}
             onAddMenuItem={handleAddMenuItem}
             onUpdateMenuItem={handleUpdateMenuItem} 
-            // onDeleteMenuItem={handleDeleteMenuItem} //شغلك المفروض هون بس مدري كيف صار تقول في غلط بترتيب الباراميترات
+            onDeleteMenuItem={handleDeleteMenuItem} //شغلك المفروض هون بس مدري كيف صار تقول في غلط بترتيب الباراميترات
             onUploadImage={handleUploadImage}
             />}
           {activeTab === 'orders' && <TableOrders restaurantId={restaurant.id} />}
@@ -156,12 +155,12 @@ const handleAddMenuItem = async (data: Omit<MenuItem, 'id'>) => {
 
 
 
-const handleUploadImage = async (file: File, type: 'logo' | 'menu', restaurantId?: string, menuId?: string) => {
+const handleUploadImage = async (file: File, type: 'logo' | 'menu', restaurantId?: string, menuId?: string): Promise<string> => {
   console.log("Uploading image:", file, "for type:", type);
   
   if (!file) {
     console.error("No file provided");
-    return null;
+    throw new Error("No file provided");
   }
 
   // 1. إنشاء مسار فريد للصورة
@@ -198,3 +197,12 @@ const handleUploadImage = async (file: File, type: 'logo' | 'menu', restaurantId
     throw new Error("فشل في تحميل الصورة");
   }
 };
+
+
+const handleDeleteMenuItem = async (id: string) => {
+  const result = await deleteMenuItem(id);
+  if (!result.success) {
+    throw new Error(result.error || "Failed to delete menu item");
+  }
+
+}

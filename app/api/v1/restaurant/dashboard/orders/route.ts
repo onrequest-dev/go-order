@@ -1,4 +1,5 @@
 import { decodeJWT } from "@/server/jwt";
+import { notifyOrderUpdate } from "@/server/notifcations";
 import { supabase_server } from "@/server/supabase-server";
 import { RestaurantEmployeeJwt } from "@/types";
 import { NextRequest, NextResponse } from "next/server";
@@ -32,6 +33,11 @@ export async function PUT(request: NextRequest) {
     //     if (!data) {
     //     return NextResponse.json({ error: "Order not found or doesn't belong to your restaurant" }, { status: 404 });
     // }
+    if(newStatus === "ready"){
+        console.log("Notifying order update for order ID:", orderId);
+         notifyOrderUpdate(jwt_user.restaurantId, newStatus, orderId).catch(err => {
+        console.error('Failed to send push notifications (non-blocking):', err);
+    });}
         return NextResponse.json({ 
         status: 200,
         message: "Order status updated successfully",

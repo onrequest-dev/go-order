@@ -56,6 +56,38 @@ export async function getPendingOrders(): Promise<GetPendingOrdersResponse> {
 }
 
 
+export async function getReadyOrders(): Promise<GetPendingOrdersResponse> {
+  try {
+    const response = await fetchWithRetry('/api/v1/restaurant/dashboard/orders/getReadyOrders', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: result.error || 'Failed to fetch pending orders',
+      };
+    }
+
+    return {
+      success: true,
+      data: result.orders || [],
+    };
+  } catch (error) {
+    console.error('Error in getPendingOrders:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unknown error occurred',
+    };
+  }
+}
+
+
 // types/order.ts
 export interface UpdateOrderStatusRequest {
   orderId: string;
