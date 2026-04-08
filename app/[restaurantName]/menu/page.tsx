@@ -104,23 +104,26 @@ export default async function RestaurantMenuPage({ params, searchParams }: PageP
     );
   }
   
-  // التحقق من رقم الطاولة
-  let tableNumber: number | null = null;
+// التحقق من رقم الطاولة
+let tableNumber: number;
+
+if (tableFromUrl) {
+  const tableNum = parseInt(tableFromUrl);
   
-  if (tableFromUrl) {
-    const tableNum = parseInt(tableFromUrl);
-    if (!isNaN(tableNum) && tableNum >= 1 && tableNum <= restaurant.numberOfTables) {
-      tableNumber = tableNum;
-    } else {
-      console.log("Invalid table number, redirecting to table 1");
-      redirect(`/${restaurantName}/menu?table=1`);
-    }
-  } else {
-    console.log("No table number, redirecting to table 1");
-    redirect(`/${restaurantName}/menu?table=1`);
+  // ✅ التحقق من صحة رقم الطاولة
+  if (isNaN(tableNum) || tableNum < 1 || tableNum > restaurant.numberOfTables) {
+    console.log("Invalid table number, showing 404");
+    notFound(); // ✅ عرض صفحة 404 بدلاً من التحويل
   }
   
-  console.log("Rendering menu for table:", tableNumber);
+  tableNumber = tableNum;
+} else {
+  // إذا لم يتم توفير رقم طاولة، نعرض الطاولة 1 (هذا مقبول)
+  console.log("No table number provided, defaulting to table 1");
+  tableNumber = 1;
+}
+
+console.log("Rendering menu for table:", tableNumber);
   
   // عرض الصفحة مع المكون العميل
   return (

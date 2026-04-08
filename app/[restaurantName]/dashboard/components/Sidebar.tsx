@@ -180,7 +180,7 @@ const handleShutdown = async () => {
           mass: 0.8
         }}
         className={`
-          relative h-full w-80 md:w-80 lg:w-80 bg-white shadow-2xl flex flex-col 
+          relative h-full w-60 md:w-80 lg:w-80 bg-white shadow-2xl flex flex-col 
           overflow-y-auto overflow-x-hidden lg:rounded-3xl hide-scrollbar
           ${isMobile ? 'transform-gpu' : ''}
         `}
@@ -292,7 +292,7 @@ const handleShutdown = async () => {
               `}>
                 <Crown className="w-3 h-3" />
                 {subscriptionType === 'plus' ? 'باقة بلس' : 
-                 subscriptionType === 'pro' ? 'باقة برو' : 'باقة عادية'}
+                subscriptionType === 'pro' ? 'باقة برو' : 'باقة عادية'}
               </span>
             </div>
             

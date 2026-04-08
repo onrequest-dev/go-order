@@ -1066,6 +1066,12 @@ export default function MenuClient({ restaurant, tableNumber }: MenuClientProps)
     };
   }, [isCartSheetOpen]);
 
+    // ✅ إضافة: حل مشكلة توقف الأزرار بعد حذف آخر عنصر
+  useEffect(() => {
+    if (isCartSheetOpen && cartItems.length === 0) {
+      setIsCartSheetOpen(false);
+    }
+  }, [cartItems.length, isCartSheetOpen]);
   // عرض التنبيه
   const showToastMessage = (message: string) => {
     setToastMessage(message);

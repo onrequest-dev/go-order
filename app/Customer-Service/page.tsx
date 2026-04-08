@@ -696,7 +696,7 @@ export default function CustomerService() {
   );
 
   const services = [
-    { id: 'subscription', title: 'إنشاء اشتراك جديد', icon: <Sparkles className="w-6 h-6" />, description: 'احصل على اشتراك جديد لمطعمك مع تجربة مجانية', gradient: 'from-blue-500 to-cyan-500' },
+    { id: 'subscription', title: 'إنشاء اشتراك جديد (او جرب مجاناً 14 يوم)', icon: <Sparkles className="w-6 h-6" />, description: 'احصل على اشتراك جديد لمطعمك مع تجربة مجانية', gradient: 'from-blue-500 to-cyan-500' },
     { id: 'upgrade', title: 'ترقية الاشتراك', icon: <Crown className="w-6 h-6" />, description: 'رقّي اشتراكك للحصول على ميزات أكثر', gradient: 'from-purple-500 to-pink-500' },
     { id: 'tables', title: 'إضافة طاولات', icon: <Table className="w-6 h-6" />, description: 'أضف طاولات جديدة لمطعمك', gradient: 'from-green-500 to-emerald-500' },
     { id: 'password', title: 'إدارة كلمات المرور', icon: <Key className="w-6 h-6" />, description: 'استرجاع أو تغيير كلمة المرور', gradient: 'from-orange-500 to-red-500' }

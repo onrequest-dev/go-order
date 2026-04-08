@@ -395,7 +395,7 @@ const handleActivateItem = async (id: string) => {
 </AnimatePresence>
 
       {/* التبويبات */}
-      <div className="flex justify-center mb-8">
+      <div className="flex justify-center mb-2">
         <div className="bg-gray-100 rounded-2xl p-1 inline-flex gap-1">
           <button
             onClick={() => setActiveTab('info')}

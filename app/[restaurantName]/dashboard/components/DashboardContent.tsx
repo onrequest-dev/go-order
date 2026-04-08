@@ -70,14 +70,14 @@ export function DashboardContent({ restaurant, activeTab }: DashboardContentProp
     <div className="p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* عنوان الصفحة - يظهر فقط على الشاشات الكبيرة */}
-        <div className="hidden lg:block mb-6 md:mb-8">
+        {/* <div className="hidden lg:block mb-3 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
             {getTabTitle(activeTab)}
           </h1>
           <p className="text-gray-500 mt-1 text-sm md:text-base">
             {getTabDescription(activeTab, restaurant.name)}
           </p>
-        </div>
+        </div> */}
         
         {/* المحتوى */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -89,7 +89,7 @@ export function DashboardContent({ restaurant, activeTab }: DashboardContentProp
             onDeleteMenuItem={handleDeleteMenuItem} //شغلك المفروض هون بس مدري كيف صار تقول في غلط بترتيب الباراميترات
             onUploadImage={handleUploadImage}
             />}
-          {activeTab === 'orders' && <TableOrders restaurantId={restaurant.id} />}
+          {activeTab === 'orders' && (<TableOrders restaurant={restaurant}/>)}
           {activeTab === 'promo' && <PromoPages restaurantId={restaurant.id} />}
           {activeTab === 'delivery' && <DeliveryOrders restaurantId={restaurant.id} />}
           {activeTab === 'stats' && <MonthlyStats restaurantId={restaurant.id} />}
