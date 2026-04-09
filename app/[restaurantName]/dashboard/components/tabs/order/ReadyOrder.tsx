@@ -214,7 +214,7 @@ const calculateOrderDetails = (order: Order) => {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  // مكون عرض الفاتورة
+  // مكون عرض الفاتورة - النسخة المعدلة مع شريط ثابت لزر الدفع
 // مكون عرض الفاتورة - النسخة المعدلة
 const InvoiceDisplay = ({ order, onClose, isMobile = false }: { order: Order; onClose?: () => void; isMobile?: boolean }) => {
   const { subtotal, serviceFee, totalAmount } = calculateOrderDetails(order);
@@ -238,44 +238,42 @@ const InvoiceDisplay = ({ order, onClose, isMobile = false }: { order: Order; on
           )}
         </div>
 
-{/* معلومات المطعم والطلب */}
+{/* معلومات المطعم والطلب - نسخة مضغوطة في سطر واحد */}
 <div className="mb-6">
   {/* اسم المطعم */}
-  <h2 className="text-xl font-bold text-center mb-4" style={{ color: primaryColor }}>
+  <h2 className="text-xl font-bold text-center mb-3" style={{ color: primaryColor }}>
     {restaurantName}
   </h2>
   
-  {/* معلومات الطلب - تصميم بسيط مثل الفاتورة */}
-  <div className="text-sm space-y-2">
+  {/* معلومات الطلب - تصميم مضغوط في سطر واحد */}
+  <div className="flex items-center justify-center gap-4 text-sm flex-wrap">
     {/* رقم الطلب */}
-    <div className="flex justify-between text-gray-600">
-      <span className="text-gray-600">رقم الطلب:</span>
-      <span className="font-medium">#{order.id?.slice(-6)}</span>
+    <div className="flex items-center gap-1">
+      <span className="text-gray-500 text-xs">#</span>
+      <span className="font-mono font-medium text-gray-700">{order.id?.slice(-6)}</span>
     </div>
     
-    {/* الوقت */}
-    <div className="flex justify-between text-gray-600">
-      <span className="text-gray-600">وقت الطلب:</span>
-      <span className="font-medium">
-        {new Date(order.createdAt).toLocaleTimeString('ar-SA', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        })}
-      </span>
-    </div>
+    {/* فاصل */}
+    <span className="text-gray-300">•</span>
     
     {/* رقم الطاولة - للطلبات الداخلية فقط */}
     {order.orderType === 'dine_in' && (
-      <div className="flex justify-between">
-        <span className="text-gray-600">رقم الطاولة:</span>
-        <span className="font-bold" style={{ color: primaryColor }}>
-          {order.tableNumber}
-        </span>
-      </div>
+      <>
+        <div className="flex items-center gap-1">
+          <span className="text-gray-500 text-xs">طاولة</span>
+          <span className="font-bold" style={{ color: primaryColor }}>{order.tableNumber}</span>
+        </div>
+        <span className="text-gray-300">•</span>
+      </>
     )}
     
-    {/* خط فاصل بسيط */}
-    <div className="border-b border-gray-200 pt-2"></div>
+    {/* الوقت */}
+    <div className="flex items-center gap-1">
+      <Clock className="w-3 h-3 text-gray-400" />
+      <span className="text-gray-600 text-xs">
+        {new Date(order.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+      </span>
+    </div>
   </div>
 </div>
 
@@ -381,8 +379,8 @@ const InvoiceDisplay = ({ order, onClose, isMobile = false }: { order: Order; on
         </div>
       </div>
 
-      {/* زر تأكيد الدفع - ثابت في الأسفل */}
-      <div className="p-6 pt-4 border-t bg-white">
+      {/* زر تأكيد الدفع - ثابت في الأسفل ودائماً ظاهر */}
+      <div className="sticky bottom-0 p-6 pt-4 border-t bg-white shadow-lg">
         <button
           onClick={() => setShowPaymentConfirm(true)}
           disabled={updatingId === order.id}
