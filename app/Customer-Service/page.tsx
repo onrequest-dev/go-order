@@ -298,8 +298,8 @@ export default function CustomerService() {
       {
         name: 'normal',
         title: 'Normal',
-        price: '5$',
-        priceDetail: '+ 1.5$ لكل طاولة',
+        price: '',
+        priceDetail: '',
         features: ['خدمة إدارة طلبات الطاولات داخل المطعم'],
         icon: <Coffee className="w-12 h-12" />,
         gradient: 'from-blue-600 to-cyan-500',
@@ -308,8 +308,8 @@ export default function CustomerService() {
       {
         name: 'pro',
         title: 'Pro',
-        price: '10$',
-        priceDetail: '+ 1$ لكل طاولة',
+        price: '',
+        priceDetail: '',
         features: ['إدارة طلبات الطاولات', 'خدمات الطلبات لخارج المطعم', 'صفحات إعلانية للوجبات'],
         icon: <Rocket className="w-12 h-12" />,
         gradient: 'from-purple-600 to-pink-500',
@@ -319,8 +319,8 @@ export default function CustomerService() {
       {
         name: 'plus',
         title: 'Plus',
-        price: '25$',
-        priceDetail: '+ 1.5$ لكل طاولة زائدة عن 5',
+        price: '',
+        priceDetail: '',
         features: ['نظام متكامل', 'إدارة الموظفين', 'إحصائيات المطعم', 'رفع المبيعات'],
         icon: <Crown className="w-12 h-12" />,
         gradient: 'from-yellow-600 to-orange-500',

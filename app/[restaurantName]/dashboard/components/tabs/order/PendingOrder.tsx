@@ -302,7 +302,7 @@ export default function PendingOrdersPage({ primaryColor = '#f97316' }: PendingO
       currentOrderIdsRef.current.delete(orderId);
       
       // تحديث الحالة في الخادم
-      const result = await updateOrderStatus(orderId, "served");//لازم نحطا بين انواع البيانات انو طلب وصل وتكنسل
+      const result = await updateOrderStatus(orderId, "rejected");//لازم نحطا بين انواع البيانات انو طلب وصل وتكنسل
       
       if (!result.success) {
         alert(result.error || 'فشل في رفض الطلب');

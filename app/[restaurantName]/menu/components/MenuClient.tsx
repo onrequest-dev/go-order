@@ -994,9 +994,9 @@ export default function MenuClient({ restaurant, tableNumber }: MenuClientProps)
   // مفتاح لمنع التفاعل مع الخلفية عند فتح السلة
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // حفظ السلة في sessionStorage
+  // حفظ السلة في localStorage
   useEffect(() => {
-    const savedCart = sessionStorage.getItem(`cart_${restaurant.id}_${tableNumber}`);
+    const savedCart = localStorage.getItem(`cart_${restaurant.id}_${tableNumber}`);
     if (savedCart) {
       try {
         const parsedCart = JSON.parse(savedCart);
@@ -1010,9 +1010,9 @@ export default function MenuClient({ restaurant, tableNumber }: MenuClientProps)
   // حفظ السلة عند التغيير
   useEffect(() => {
     if (cartItems.length > 0) {
-      sessionStorage.setItem(`cart_${restaurant.id}_${tableNumber}`, JSON.stringify(cartItems));
+      localStorage.setItem(`cart_${restaurant.id}_${tableNumber}`, JSON.stringify(cartItems));
     } else {
-      sessionStorage.removeItem(`cart_${restaurant.id}_${tableNumber}`);
+      localStorage.removeItem(`cart_${restaurant.id}_${tableNumber}`);
     }
   }, [cartItems, restaurant.id, tableNumber]);
 
@@ -1216,7 +1216,7 @@ const submitOrder = async (globalNotes: string) => {
     setShowConfirmation(true);
     
     setCartItems([]);
-    sessionStorage.removeItem(`cart_${restaurant.id}_${tableNumber}`);
+    localStorage.removeItem(`cart_${restaurant.id}_${tableNumber}`);
     
   } catch (error) {
     console.error("❌ خطأ في إرسال الطلب:", error);
