@@ -681,7 +681,7 @@ const Footer = () => {
           </div>
           
           <div className="text-white/30 text-sm">
-            © 2025 GoOrder. جميع الحقوق محفوظة.
+            © 2026 GoOrder. جميع الحقوق محفوظة.
           </div>
         </div>
         
