@@ -124,9 +124,9 @@ const HeroSection = () => {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-6xl font-bold text-white mb-4 leading-tight"
           >
-            ليس مجرد نظام إدارة.
+           شريكك الرقمي 
             <br />
-            <span className="text-[#FF8C42]">إنه شريك نجاحك الرقمي.</span>
+            <span className="text-[#FF8C42]"> في نجاح مطعمك </span>
           </motion.h1>
 
           {/* الوصف */}
