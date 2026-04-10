@@ -7,7 +7,10 @@ import { motion, Variants } from 'framer-motion';
 import { UtensilsCrossed, User, Lock, ArrowRight, Sparkles } from 'lucide-react';
 import { loginEmployee } from '@/client/helpers/auth';
 
-export function LoginForm() {
+
+
+
+function LoginForm() {
     const router = useRouter();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -315,4 +318,6 @@ export function LoginForm() {
     );
 }
 
-export default LoginForm;
+export default function LoginPage() {
+    return <LoginForm />;
+}

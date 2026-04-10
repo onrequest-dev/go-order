@@ -26,7 +26,7 @@ export interface Order {
   tableNumber: number;//الطاولة التي تم طلب الوجبة عليها
   items: OrderItem[];//عناصر الطلب
   totalPrice: number;//المبلغ الإجمالي للطلب
-  status: 'pending' | 'preparing' | 'ready' | 'served' | 'completed';//حالة الطلب
+  status: 'pending' | 'preparing' | 'ready' | 'served' | 'completed' | 'rejected';//حالة الطلب
   orderType: 'dine_in' | 'delivery';//(الطلب داخل المطعم أو طلب توصيل) نحن لازم نعالجه بشكل مختلف في الواجهة
   createdAt: Date;//تاريخ إنشاء الطلب  (مشان جماعة الإحصائيات)
   customerName?: string;//اسم العميل(للطلبات الخارجية)

@@ -91,7 +91,7 @@ export async function getReadyOrders(): Promise<GetPendingOrdersResponse> {
 // types/order.ts
 export interface UpdateOrderStatusRequest {
   orderId: string;
-  newStatus: 'pending' | 'preparing' | 'ready' | 'served' | 'completed';
+  newStatus: 'pending' | 'preparing' | 'ready' | 'served' | 'completed' | 'rejected';
 }
 
 export interface UpdateOrderStatusResponse {
