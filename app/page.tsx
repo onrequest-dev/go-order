@@ -715,8 +715,8 @@ export default function MobileLandingPage() {
       {/* المحتوى الرئيسي */}
       <div className="relative z-10">
         <HeroSection />
-        <VisionSection />
         <FeaturesSection />
+        <VisionSection />
         <SupportSection />
         <TrialSection />
         <Footer />

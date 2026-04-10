@@ -267,21 +267,46 @@ const handleSave = async () => {
     setEditingItem(item);
     setShowAddModal(true);
   };
-
-  // إضافة وجبة جديدة
+const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+// إضافة وجبة جديدة
 const handleAddMenuItem = async () => {
-  // التحقق من صحة البيانات
-  if (!onAddMenuItem || !newItem.name || !newItem.price) return;
+  // التحقق من الحقول المطلوبة
+  const errors: Record<string, boolean> = {};
   
-  // تفعيل حالة التحميل وتعطيل الزر
+  if (!newItem.name || newItem.name.trim() === '') {
+    errors.name = true;
+  }
+  if (!newItem.description || newItem.description.trim() === '') {
+    errors.description = true;
+  }
+  if (!newItem.price || newItem.price <= 0) {
+    errors.price = true;
+  }
+  if (!newItem.category || newItem.category.trim() === '') {
+    errors.category = true;
+  }
+  if (!newItem.preparationTime || newItem.preparationTime <= 0) {
+    errors.preparationTime = true;
+  }
+  
+  // إذا كان هناك أخطاء، عرضها وإيقاف الإرسال
+  if (Object.keys(errors).length > 0) {
+    setFieldErrors(errors);
+    setSuccessMessage('يرجى ملء جميع الحقول المطلوبة');
+    setShowSuccess(true);
+    return;
+  }
+  
+  if (!onAddMenuItem) return;
+  
   setSubmitting(true);
   
   try {
     const added = await onAddMenuItem(newItem as Omit<MenuItem, 'id'>);
     setMenuItems([...menuItems, added]);
     setShowAddModal(false);
+    setFieldErrors({});
     
-    // إعادة تعيين النموذج
     setNewItem({
       name: '',
       description: '',
@@ -299,16 +324,43 @@ const handleAddMenuItem = async () => {
     setSuccessMessage('حدث خطأ في إضافة الوجبة');
     setShowSuccess(true);
   } finally {
-    // إلغاء حالة التحميل بغض النظر عن نجاح أو فشل العملية
     setSubmitting(false);
   }
 };
 
-  // تحديث الوجبة
+// تحديث الوجبة
 const handleUpdateMenuItem = async () => {
-  if (!onUpdateMenuItem || !editingItem) return;
+  if (!editingItem) return;
   
-  // تفعيل حالة التحميل
+  // التحقق من الحقول المطلوبة
+  const errors: Record<string, boolean> = {};
+  
+  if (!editingItem.name || editingItem.name.trim() === '') {
+    errors.name = true;
+  }
+  if (!editingItem.description || editingItem.description.trim() === '') {
+    errors.description = true;
+  }
+  if (!editingItem.price || editingItem.price <= 0) {
+    errors.price = true;
+  }
+  if (!editingItem.category || editingItem.category.trim() === '') {
+    errors.category = true;
+  }
+  if (!editingItem.preparationTime || editingItem.preparationTime <= 0) {
+    errors.preparationTime = true;
+  }
+  
+  // إذا كان هناك أخطاء، عرضها وإيقاف الإرسال
+  if (Object.keys(errors).length > 0) {
+    setFieldErrors(errors);
+    setSuccessMessage('يرجى ملء جميع الحقول المطلوبة');
+    setShowSuccess(true);
+    return;
+  }
+  
+  if (!onUpdateMenuItem) return;
+  
   setSubmitting(true);
   
   try {
@@ -318,6 +370,7 @@ const handleUpdateMenuItem = async () => {
     ));
     setEditingItem(null);
     setShowAddModal(false);
+    setFieldErrors({});
     
     setSuccessMessage('تم تحديث الوجبة بنجاح!');
     setShowSuccess(true);
@@ -326,7 +379,6 @@ const handleUpdateMenuItem = async () => {
     setSuccessMessage('حدث خطأ في تحديث الوجبة');
     setShowSuccess(true);
   } finally {
-    // إلغاء حالة التحميل
     setSubmitting(false);
   }
 };
@@ -744,6 +796,7 @@ const handleActivateItem = async (id: string) => {
               <button
                 onClick={() => {
                   setEditingItem(null);
+                  setFieldErrors({});
                   setShowAddModal(true);
                 }}
                 className="px-5 py-2 rounded-xl font-medium text-white transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg"
@@ -1015,6 +1068,7 @@ const handleActivateItem = async (id: string) => {
       if (e.target === e.currentTarget) {
         setShowAddModal(false);
         setEditingItem(null);
+        setFieldErrors({});
       }
     }}
   >
@@ -1042,6 +1096,7 @@ const handleActivateItem = async (id: string) => {
           <button
             onClick={() => {
               setShowAddModal(false);
+              setFieldErrors({});
               setEditingItem(null);
             }}
             className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1050,143 +1105,212 @@ const handleActivateItem = async (id: string) => {
           </button>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* الجانب الأيسر: نموذج الإدخال */}
-          <div className="space-y-4">
-            {/* صورة الوجبة */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">صورة الوجبة</label>
-              <div className="flex items-center gap-3">
-                {(editingItem?.image || newItem.image) ? (
-                  <img 
-                    src={editingItem?.image || newItem.image} 
-                    alt="Preview" 
-                    className="w-16 h-16 rounded-lg object-cover border"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center border">
-                    <ImageIcon className="w-6 h-6 text-gray-400" />
-                  </div>
-                )}
-                <label className="cursor-pointer">
-                  <div className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-green-200 rounded-lg transition-colors flex items-center gap-2 block text-sm font-semibold text-gray-900 mb-3">
-                    <Upload className="w-3.5 h-3.5" />
-                    {uploading ? 'جاري الرفع...' : 'رفع صورة'}
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(file, 'menu');
-                    }}
-                  />
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">اسم الوجبة *</label>
-              <input
-                type="text"
-                value={editingItem ? editingItem.name : newItem.name}
-                onChange={(e) => editingItem 
-                  ? setEditingItem({ ...editingItem, name: e.target.value })
-                  : setNewItem({ ...newItem, name: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">الوصف</label>
-              <textarea
-                value={editingItem ? editingItem.description : newItem.description}
-                onChange={(e) => editingItem
-                  ? setEditingItem({ ...editingItem, description: e.target.value })
-                  : setNewItem({ ...newItem, description: e.target.value })
-                }
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">السعر *</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={editingItem ? editingItem.price : (newItem.price ?? '')}
-                onChange={(e) => {
-                  let value = e.target.value;
-                  value = value.replace(/[^0-9.]/g, '');
-                  const parts = value.split('.');
-                  if (parts.length > 2) {
-                    value = parts[0] + '.' + parts.slice(1).join('');
-                  }
-                  
-                  if (editingItem) {
-                    setEditingItem({ ...editingItem, price: value as any });
-                  } else {
-                    setNewItem({ ...newItem, price: value as any });
-                  }
-                }}
-                onBlur={() => {
-                  let value = editingItem 
-                    ? editingItem.price.toString() 
-                    : (newItem.price?.toString() ?? '0');
-                  
-                  let num = parseFloat(value);
-                  if (isNaN(num)) num = 0;
-                  if (num < 0) num = 0;
-                  
-                  if (editingItem) {
-                    setEditingItem({ ...editingItem, price: num });
-                  } else {
-                    setNewItem({ ...newItem, price: num });
-                  }
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                placeholder="مثال: 15.5"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">الفئة</label>
-              <select
-                value={editingItem ? editingItem.category : newItem.category}
-                onChange={(e) => editingItem
-                  ? setEditingItem({ ...editingItem, category: e.target.value })
-                  : setNewItem({ ...newItem, category: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-              >
-                <option value="">بدون فئة</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">وقت التحضير (دقيقة)</label>
-              <input
-                type="number"
-                value={editingItem ? editingItem.preparationTime : newItem.preparationTime}
-                onChange={(e) => editingItem
-                  ? setEditingItem({ ...editingItem, preparationTime: parseInt(e.target.value) || 0 })
-                  : setNewItem({ ...newItem, preparationTime: parseInt(e.target.value) || 0 })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-              />
-            </div>
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  {/* الجانب الأيسر: نموذج الإدخال */}
+  <div className="space-y-4">
+    {/* صورة الوجبة */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-900 mb-1">صورة الوجبة</label>
+      <div className="flex items-center gap-3">
+        {(editingItem?.image || newItem.image) ? (
+          <img 
+            src={editingItem?.image || newItem.image} 
+            alt="Preview" 
+            className="w-16 h-16 rounded-lg object-cover border"
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center border">
+            <ImageIcon className="w-6 h-6 text-gray-400" />
           </div>
+        )}
+        <label className="cursor-pointer">
+          <div className="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 hover:bg-green-200 rounded-lg transition-colors flex items-center gap-2">
+            <Upload className="w-3.5 h-3.5" />
+            {uploading ? 'جاري الرفع...' : 'رفع صورة'}
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImageUpload(file, 'menu');
+            }}
+          />
+        </label>
+      </div>
+    </div>
+
+    {/* اسم الوجبة */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-900 mb-1">
+        اسم الوجبة <span className="text-red-500">*</span>
+      </label>
+      <input
+        type="text"
+        value={editingItem ? editingItem.name : newItem.name}
+        onChange={(e) => {
+          const value = e.target.value;
+          editingItem 
+            ? setEditingItem({ ...editingItem, name: value })
+            : setNewItem({ ...newItem, name: value });
+          // مسح الخطأ عند الكتابة
+          if (fieldErrors.name) {
+            setFieldErrors({ ...fieldErrors, name: false });
+          }
+        }}
+        className={`w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 ${
+          fieldErrors.name ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
+        }`}
+        style={!fieldErrors.name ? { '--tw-ring-color': primaryColor } as React.CSSProperties : {}}
+      />
+      {fieldErrors.name && (
+        <p className="text-red-500 text-xs mt-1">هذا الحقل مطلوب</p>
+      )}
+    </div>
+
+    {/* الوصف */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-900 mb-1">
+        الوصف <span className="text-red-500">*</span>
+      </label>
+      <textarea
+        value={editingItem ? editingItem.description : newItem.description}
+        onChange={(e) => {
+          const value = e.target.value;
+          editingItem
+            ? setEditingItem({ ...editingItem, description: value })
+            : setNewItem({ ...newItem, description: value });
+          // مسح الخطأ عند الكتابة
+          if (fieldErrors.description) {
+            setFieldErrors({ ...fieldErrors, description: false });
+          }
+        }}
+        rows={3}
+        className={`w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 ${
+          fieldErrors.description ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
+        }`}
+        style={!fieldErrors.description ? { '--tw-ring-color': primaryColor } as React.CSSProperties : {}}
+      />
+      {fieldErrors.description && (
+        <p className="text-red-500 text-xs mt-1">هذا الحقل مطلوب</p>
+      )}
+    </div>
+    
+    {/* السعر */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-900 mb-1">
+        السعر <span className="text-red-500">*</span>
+      </label>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={editingItem ? editingItem.price : (newItem.price ?? '')}
+        onChange={(e) => {
+          let value = e.target.value;
+          value = value.replace(/[^0-9.]/g, '');
+          const parts = value.split('.');
+          if (parts.length > 2) {
+            value = parts[0] + '.' + parts.slice(1).join('');
+          }
+          
+          if (editingItem) {
+            setEditingItem({ ...editingItem, price: value as any });
+          } else {
+            setNewItem({ ...newItem, price: value as any });
+          }
+          
+          // مسح الخطأ عند الكتابة
+          if (fieldErrors.price) {
+            setFieldErrors({ ...fieldErrors, price: false });
+          }
+        }}
+        onBlur={() => {
+          let value = editingItem 
+            ? editingItem.price.toString() 
+            : (newItem.price?.toString() ?? '0');
+          
+          let num = parseFloat(value);
+          if (isNaN(num)) num = 0;
+          if (num < 0) num = 0;
+          
+          if (editingItem) {
+            setEditingItem({ ...editingItem, price: num });
+          } else {
+            setNewItem({ ...newItem, price: num });
+          }
+        }}
+        className={`w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 ${
+          fieldErrors.price ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
+        }`}
+        style={!fieldErrors.price ? { '--tw-ring-color': primaryColor } as React.CSSProperties : {}}
+        placeholder="مثال: 15.5"
+      />
+      {fieldErrors.price && (
+        <p className="text-red-500 text-xs mt-1">السعر يجب أن يكون أكبر من 0</p>
+      )}
+    </div>
+
+    {/* الفئة */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-900 mb-1">
+        الفئة <span className="text-red-500">*</span>
+      </label>
+      <select
+        value={editingItem ? editingItem.category : newItem.category}
+        onChange={(e) => {
+          const value = e.target.value;
+          editingItem
+            ? setEditingItem({ ...editingItem, category: value })
+            : setNewItem({ ...newItem, category: value });
+          // مسح الخطأ عند الاختيار
+          if (fieldErrors.category) {
+            setFieldErrors({ ...fieldErrors, category: false });
+          }
+        }}
+        className={`w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 ${
+          fieldErrors.category ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
+        }`}
+        style={!fieldErrors.category ? { '--tw-ring-color': primaryColor } as React.CSSProperties : {}}
+      >
+        <option value="">اختر الفئة</option>
+        {categories.map(cat => (
+          <option key={cat} value={cat}>{cat}</option>
+        ))}
+      </select>
+      {fieldErrors.category && (
+        <p className="text-red-500 text-xs mt-1">هذا الحقل مطلوب</p>
+      )}
+    </div>
+
+    {/* وقت التحضير */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-900 mb-1">
+        وقت التحضير (دقيقة) <span className="text-red-500">*</span>
+      </label>
+      <input
+        type="number"
+        value={editingItem ? editingItem.preparationTime : newItem.preparationTime}
+        onChange={(e) => {
+          const value = parseInt(e.target.value) || 0;
+          editingItem
+            ? setEditingItem({ ...editingItem, preparationTime: value })
+            : setNewItem({ ...newItem, preparationTime: value });
+          // مسح الخطأ عند الكتابة
+          if (fieldErrors.preparationTime) {
+            setFieldErrors({ ...fieldErrors, preparationTime: false });
+          }
+        }}
+        className={`w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 ${
+          fieldErrors.preparationTime ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
+        }`}
+        style={!fieldErrors.preparationTime ? { '--tw-ring-color': primaryColor } as React.CSSProperties : {}}
+      />
+      {fieldErrors.preparationTime && (
+        <p className="text-red-500 text-xs mt-1">وقت التحضير يجب أن يكون أكبر من 0</p>
+      )}
+    </div>
+  </div>
 
           {/* الجانب الأيمن: معاينة الوجبة */}
           <div className="bg-gray-50 rounded-xl p-4">
@@ -1281,6 +1405,7 @@ const handleActivateItem = async (id: string) => {
               onClick={() => {
                 setShowAddModal(false);
                 setEditingItem(null);
+                setFieldErrors({});
               }}
               disabled={submitting} // تعطيل أثناء التحميل
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

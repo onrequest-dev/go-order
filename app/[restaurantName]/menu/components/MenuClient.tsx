@@ -185,14 +185,12 @@ const MenuItemCard = ({
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-50px" });
 
-  const handleAddToCart = () => {
-    if (quantity === 0) {
-      showToast("الرجاء تحديد العدد المطلوب أولاً");
-      return;
-    }
-    onAddToCart(item, quantity);
-    setQuantity(0);
-  };
+const handleAddToCart = () => {
+  // إذا كانت الكمية 0، نضيف 1 تلقائياً
+  const finalQuantity = quantity === 0 ? 1 : quantity;
+  onAddToCart(item, finalQuantity);
+  setQuantity(0);
+};
 
   return (
     <motion.div
@@ -332,26 +330,35 @@ const CartBottomSheet = ({
   return (
     <AnimatePresence>
       <>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 bg-black/50 z-50"
-        />
-        
-        <motion.div
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          drag="y"
-          dragConstraints={{ top: 0 }}
-          dragElastic={0.2}
-          onDragEnd={onDragEnd}
-          className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col"
-          style={{ borderTop: `3px solid ${primaryColor}` }}
-        >
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ 
+          duration: 0.3,
+          ease: "easeInOut"
+        }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/50 z-50"
+      />
+      
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ 
+          type: "tween",
+          duration: 0.3,
+          ease: "easeInOut"
+        }}
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.3}
+        dragMomentum={false}
+        onDragEnd={onDragEnd}
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col"
+        style={{ borderTop: `3px solid ${primaryColor}` }}
+      >
           <div className="sticky top-0 bg-white rounded-t-3xl p-4 border-b">
             <div className="flex items-center justify-between">
               <div>
@@ -936,7 +943,7 @@ const InvoiceMiniCard = ({
                   <button
                     onClick={downloadInvoiceAsImage}
                     disabled={isDownloading || hasDownloaded || !hasItems}
-                    className={`flex-1 py-2.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 transition-all hover:shadow-lg ${
+                    className={`flex-1 py-2.5 rounded-xl text-white text-xs  font-bold flex items-center justify-center gap-2 transition-all hover:shadow-lg ${
                       (isDownloading || hasDownloaded || !hasItems) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                     style={{ backgroundColor: primaryColor }}
@@ -946,11 +953,11 @@ const InvoiceMiniCard = ({
                     ) : (
                       <Download size={18} />
                     )}
-                    {isDownloading ? 'جاري التحميل...' : hasDownloaded ? 'تم التحميل ✓' : 'تحميل الفاتورة كصورة'}
+                    {isDownloading ? 'جاري التحميل...' : hasDownloaded ? 'تم التحميل ✓' : 'تحميل كصورة'}
                   </button>
                   <button
                     onClick={handleFinalClose}
-                    className="flex-1 py-2.5 rounded-xl text-gray-600 font-bold border border-gray-200 hover:bg-gray-50 transition-all"
+                    className="flex-1 py-2.5 rounded-xl text-gray-600 text-xs font-bold border border-gray-200 hover:bg-gray-50 transition-all"
                   >
                     إغلاق
                   </button>
@@ -1082,28 +1089,28 @@ export default function MenuClient({ restaurant, tableNumber }: MenuClientProps)
   };
 
   // إضافة إلى السلة مع تأثير حركي
-  const addToCart = (item: MenuItem, quantity: number) => {
-    setCartItems(prev => {
-      const existing = prev.find(i => i.id === item.id);
-      let newItems;
-      if (existing) {
-        newItems = prev.map(i =>
-          i.id === item.id
-            ? { ...i, quantity: i.quantity + quantity }
-            : i
-        );
-      } else {
-        newItems = [...prev, { ...item, quantity, notes: "" }];
-      }
-      
-      // تفعيل تأثير التكبير والتصغير لزر السلة
-      setCartAnimation(true);
-      setTimeout(() => setCartAnimation(false), 300);
-      
-      return newItems;
-    });
-    setSubmitError(null);
-  };
+const addToCart = (item: MenuItem, quantity: number) => {
+  setCartItems(prev => {
+    const existing = prev.find(i => i.id === item.id);
+    let newItems;
+    if (existing) {
+      newItems = prev.map(i =>
+        i.id === item.id
+          ? { ...i, quantity: i.quantity + quantity }
+          : i
+      );
+    } else {
+      newItems = [...prev, { ...item, quantity, notes: "" }];
+    }
+    
+    // تفعيل تأثير التكبير والتصغير لزر السلة
+    setCartAnimation(true);
+    setTimeout(() => setCartAnimation(false), 300);
+    
+    return newItems;
+  });
+  setSubmitError(null);
+};
 
   // تحديث الكمية
   const updateQuantity = (id: string, change: number) => {
@@ -1229,7 +1236,15 @@ const submitOrder = async (globalNotes: string) => {
 
   // معالج سحب السلة للأسفل
   const handleCartDragEnd = (event: any, info: any) => {
-    if (info.offset.y > 100) {
+    // استخدام velocity (السرعة) بالإضافة إلى المسافة لتحديد الإغلاق
+    const dragThreshold = 80; // مسافة السحب المطلوبة للإغلاق (بالبكسل)
+    const velocityThreshold = 300; // سرعة السحب المطلوبة
+    
+    const shouldClose = 
+      info.offset.y > dragThreshold || // سحب لمسافة كافية
+      info.velocity.y > velocityThreshold; // أو سحب بسرعة كافية
+    
+    if (shouldClose) {
       setIsCartSheetOpen(false);
     }
   };
@@ -1333,9 +1348,6 @@ const submitOrder = async (globalNotes: string) => {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                <span className="flex items-center gap-1 text-white/90 text-sm bg-black/20 px-2 py-1 rounded-full">
-                  <Clock size={12} /> متوسط وقت التحضير {restaurant.averagePreparationTime} دقيقة
-                </span>
                 <span className="flex items-center gap-1 text-white/90 text-sm bg-black/20 px-2 py-1 rounded-full">
                   <Users size={12} /> طاولة رقم {tableNumber}
                 </span>
